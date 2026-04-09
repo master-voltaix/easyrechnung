@@ -1,0 +1,142 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String          @id @default(cuid())
+  name         String?
+  email        String          @unique
+  passwordHash String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  company      CompanyProfile?
+  customers    Customer[]
+  products     Product[]
+  invoices     Invoice[]
+  expenses     Expense[]
+}
+
+model CompanyProfile {
+  id                 String   @id @default(cuid())
+  companyName        String
+  ownerName          String?
+  street             String?
+  postalCode         String?
+  city               String?
+  phone              String?
+  email              String?
+  website            String?
+  vatId              String?
+  taxNumber          String?
+  iban               String?
+  bic                String?
+  bankName           String?
+  accountHolder      String?
+  defaultInvoiceNote String?
+  logoUrl            String?
+  accentColor        String   @default("#1f2937")
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Customer {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName   String
+  contactPerson String?
+  street        String?
+  postalCode    String?
+  city          String?
+  email         String?
+  phone         String?
+  vatId         String?
+  notes         String?
+  totalPrice    Decimal?
+  textField     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  invoices      Invoice[]
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  unitPrice    Decimal      
+  vatRate      Decimal      
+  unit         String        @default("Stk.")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  invoiceItems InvoiceItem[]
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  invoiceNumber String
+  issueDate     DateTime
+  dueDate       DateTime?
+  serviceDate   DateTime?
+  paidDate      DateTime?
+  status        String        @default("DRAFT")
+  subtotalNet   Decimal
+  totalVat      Decimal
+  totalGross    Decimal
+  discountType   String?
+  discountValue  Decimal?
+  customNote     String?
+  internalNote   String?
+  recurringType  String    @default("NONE")
+  items         InvoiceItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([userId, invoiceNumber])
+}
+
+model InvoiceItem {
+  id           String   @id @default(cuid())
+  invoiceId    String
+  invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  title        String
+  description  String?
+  quantity     Decimal
+  unit         String   @default("Stk.")
+  unitPrice    Decimal
+  vatRate      Decimal
+  lineTotalNet Decimal
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  description String
+  amount      Decimal
+  date        DateTime
+  category    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
