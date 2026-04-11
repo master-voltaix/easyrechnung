@@ -4,7 +4,16 @@ const nextConfig = {
     serverComponentsExternalPackages: ["puppeteer"],
   },
   images: {
-    domains: ["localhost"],
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+      },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
   },
 };
 
