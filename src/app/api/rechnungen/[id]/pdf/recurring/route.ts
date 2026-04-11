@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { generateInvoiceHtml, type InvoiceData } from "@/components/invoice-pdf-template";
 import { generateModernInvoiceHtml } from "@/components/invoice-pdf-template-modern";
 import { getUserTemplateSettings } from "@/lib/actions/templates";
-import { readFile } from "fs/promises";
-import path from "path";
+import { launchBrowser } from "@/lib/browser";
+import { loadLogoAsBase64 } from "@/lib/logo";
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("de-DE", {
@@ -76,24 +76,9 @@ export async function GET(
     const vatGroups = Array.from(vatGroupMap.entries()).map(([rate, amount]) => ({ rate, amount }));
 
     // Load logo as base64
-    let logoBase64: string | null = null;
-    let logoMimeType: string | null = null;
-    if (company?.logoUrl) {
-      try {
-        const logoPath = path.join(process.cwd(), "public", company.logoUrl);
-        const logoBuffer = await readFile(logoPath);
-        logoBase64 = logoBuffer.toString("base64");
-        const ext = company.logoUrl.split(".").pop()?.toLowerCase();
-        logoMimeType =
-          ext === "png"
-            ? "image/png"
-            : ext === "jpg" || ext === "jpeg"
-            ? "image/jpeg"
-            : "image/png";
-      } catch {
-        // Logo not found, skip
-      }
-    }
+    const logo = company?.logoUrl ? await loadLogoAsBase64(company.logoUrl) : null;
+    const logoBase64 = logo?.logoBase64 ?? null;
+    const logoMimeType = logo?.logoMimeType ?? null;
 
     // Build period label for the service date field
     const isSameDay = fromStr === toStr;
@@ -164,11 +149,7 @@ export async function GET(
         ? generateModernInvoiceHtml(invoiceData, settings)
         : generateInvoiceHtml(invoiceData, settings);
 
-    const puppeteer = await import("puppeteer");
-    const browser = await puppeteer.default.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-    });
+    const browser = await launchBrowser();
 
     try {
       const page = await browser.newPage();

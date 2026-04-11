@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -17,19 +16,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Keine Datei hochgeladen" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
     const ext = file.name.split(".").pop() ?? "png";
-    const dir = path.join(process.cwd(), "public", "uploads", "logos", session.user.id);
-    await mkdir(dir, { recursive: true });
+    const pathname = `logos/${session.user.id}/logo.${ext}`;
 
-    const filename = `logo.${ext}`;
-    const filepath = path.join(dir, filename);
-    await writeFile(filepath, buffer);
+    const blob = await put(pathname, file, {
+      access: "public",
+      addRandomSuffix: false,
+    });
 
-    const url = `/uploads/logos/${session.user.id}/${filename}`;
-    return NextResponse.json({ url });
+    return NextResponse.json({ url: blob.url });
   } catch (error) {
     console.error("Logo upload error:", error);
     return NextResponse.json({ error: "Upload fehlgeschlagen" }, { status: 500 });

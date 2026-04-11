@@ -5,8 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { TemplateSettings, getDefaults } from "@/lib/template-settings";
 import { generateInvoiceHtml, type InvoiceData } from "@/components/invoice-pdf-template";
 import { generateModernInvoiceHtml } from "@/components/invoice-pdf-template-modern";
-import { readFile } from "fs/promises";
-import path from "path";
+import { loadLogoAsBase64 } from "@/lib/logo";
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -35,24 +34,9 @@ export async function GET(request: NextRequest) {
   });
 
   // Load logo as base64
-  let logoBase64: string | null = null;
-  let logoMimeType: string | null = null;
-  if (company?.logoUrl) {
-    try {
-      const logoPath = path.join(process.cwd(), "public", company.logoUrl);
-      const logoBuffer = await readFile(logoPath);
-      logoBase64 = logoBuffer.toString("base64");
-      const ext = company.logoUrl.split(".").pop()?.toLowerCase();
-      logoMimeType =
-        ext === "png"
-          ? "image/png"
-          : ext === "jpg" || ext === "jpeg"
-          ? "image/jpeg"
-          : "image/png";
-    } catch {
-      // Logo not found, skip
-    }
-  }
+  const logo = company?.logoUrl ? await loadLogoAsBase64(company.logoUrl) : null;
+  const logoBase64 = logo?.logoBase64 ?? null;
+  const logoMimeType = logo?.logoMimeType ?? null;
 
   // Sample invoice data
   const invoiceData: InvoiceData = {
