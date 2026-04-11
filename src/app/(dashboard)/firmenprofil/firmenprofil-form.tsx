@@ -73,6 +73,7 @@ export function FirmenprofilForm({ initialProfile }: FirmenprofilFormProps) {
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<CompanyFormData>({
     resolver: zodResolver(companySchema),
@@ -124,6 +125,7 @@ export function FirmenprofilForm({ initialProfile }: FirmenprofilFormProps) {
         setLogoUrl(data.url);
         setLogoCacheBust(Date.now());
         if (fileInputRef.current) fileInputRef.current.value = "";
+        await upsertCompanyProfile({ ...getValues(), logoUrl: data.url });
         toast({ title: "Logo hochgeladen", description: "Logo wurde erfolgreich hochgeladen." });
       }
     } catch {
