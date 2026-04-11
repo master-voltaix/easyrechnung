@@ -4,45 +4,139 @@
 
 @layer base {
   :root {
-    /* Light Mode - Blue Theme */
-    --background: 210 15% 97%;
-    --foreground: 210 20% 14%;
+    /* QuickBill — warm parchment + emerald green */
+    --background: 38 33% 95%;        /* #F8F5EF - warm parchment */
+    --foreground: 35 50% 6%;         /* #0D0A05 - deep ink */
 
-    --card: 0 0% 100%;
-    --card-foreground: 210 20% 14%;
+    --card: 0 0% 100%;               /* #FFFFFF - pure white */
+    --card-foreground: 35 50% 6%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 20% 14%;
+    --popover-foreground: 35 50% 6%;
 
-    --primary: 210 100% 50%;
+    --primary: 141 42% 52%;          /* #52B876 - QuickBill green */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 76% 95%;
-    --secondary-foreground: 210 20% 14%;
+    --secondary: 38 20% 90%;         /* warm light gray */
+    --secondary-foreground: 35 30% 20%;
 
-    --muted: 210 15% 90%;
-    --muted-foreground: 210 15% 40%;
+    --muted: 38 15% 87%;
+    --muted-foreground: 32 8% 48%;
 
-    --accent: 210 100% 55%;
+    --accent: 141 42% 52%;           /* QuickBill green */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 78% 52%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 210 15% 90%;
-    --input: 210 15% 95%;
-    --ring: 210 100% 50%;
+    --border: 38 18% 84%;            /* warm gray border */
+    --input: 38 20% 93%;
+    --ring: 141 42% 52%;
 
-    --radius: 0.75rem;
+    --radius: 0.125rem;              /* 2px — architectural, precise */
   }
-
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans), 'Instrument Sans', system-ui, sans-serif;
+    font-feature-settings: "ss01", "ss02", "cv01";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), 'Bricolage Grotesque', system-ui, sans-serif;
+    font-feature-settings: "ss01";
+    letter-spacing: -0.02em;
+  }
+
+  /* Monospace for financial data */
+  .font-mono,
+  [data-value],
+  .tabular-nums {
+    font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Card elevation system */
+  .card-elevated {
+    @apply bg-card border border-border;
+    box-shadow: 2px 2px 0 hsl(var(--border));
+  }
+
+  /* Sidebar link active indicator */
+  .nav-active-bar {
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    background: #52B876;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* Data table striping */
+  .data-table tr:nth-child(even) td {
+    @apply bg-secondary/30;
+  }
+
+  /* Status label style — typographic, not pill */
+  .status-label {
+    font-family: var(--font-mono), monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+}
+
+@layer utilities {
+  /* Page entry — simple opacity fade, no transform jank */
+  .animate-page-in {
+    animation: fadeIn 0.2s ease both;
+  }
+
+  /* Auth form entry */
+  .animate-fade-up {
+    animation: fadeIn 0.18s ease both;
+  }
+
+  .animate-metric {
+    animation: fadeIn 0.2s ease both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Orange underline accent for section titles */
+  .heading-accent::after {
+    content: '';
+    display: block;
+    width: 2rem;
+    height: 3px;
+    background: hsl(var(--primary));
+    margin-top: 0.5rem;
+  }
+
+  /* Grain texture overlay */
+  .grain::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
   }
 }

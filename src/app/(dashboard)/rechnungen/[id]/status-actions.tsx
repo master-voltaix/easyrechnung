@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { updateInvoiceStatus, updateInvoicePaidDate } from "@/lib/actions/invoices";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
-type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "CANCELLED";
+type InvoiceStatus = "DRAFT" | "PAID" | "CANCELLED";
 
 interface InvoiceStatusActionsProps {
   id: string;
@@ -21,19 +21,47 @@ export function InvoiceStatusActions({ id, currentStatus, paidDate }: InvoiceSta
   const { toast } = useToast();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [showPaidDateInput, setShowPaidDateInput] = useState(false);
-  const [selectedPaidDate, setSelectedPaidDate] = useState<string>(
+  const [showDateInput, setShowDateInput] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(
     paidDate ? new Date(paidDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]
   );
 
-  const handleStatusChange = async (newStatus: InvoiceStatus) => {
+  if (currentStatus === "CANCELLED") return null;
+
+  const isPaid = currentStatus === "PAID";
+
+  const handleMarkAsPaid = async () => {
     setLoading(true);
     try {
-      const result = await updateInvoiceStatus(id, newStatus);
+      const date = new Date(selectedDate + "T00:00:00");
+      const r1 = await updateInvoicePaidDate(id, date);
+      if (r1.error) {
+        toast({ title: "Fehler", description: r1.error, variant: "destructive" });
+        return;
+      }
+      if (!isPaid) {
+        const r2 = await updateInvoiceStatus(id, "PAID");
+        if (r2.error) {
+          toast({ title: "Fehler", description: r2.error, variant: "destructive" });
+          return;
+        }
+      }
+      toast({ title: isPaid ? "Bezahlt-Datum aktualisiert" : "Rechnung als bezahlt markiert" });
+      setShowDateInput(false);
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    setLoading(true);
+    try {
+      const result = await updateInvoiceStatus(id, "CANCELLED");
       if (result.error) {
         toast({ title: "Fehler", description: result.error, variant: "destructive" });
       } else {
-        toast({ title: "Status aktualisiert" });
+        toast({ title: "Rechnung storniert" });
         router.refresh();
       }
     } finally {
@@ -41,107 +69,51 @@ export function InvoiceStatusActions({ id, currentStatus, paidDate }: InvoiceSta
     }
   };
 
-  const handleMarkAsPaid = async () => {
-    setLoading(true);
-    try {
-      // Use the input date string directly (YYYY-MM-DD format)
-      // Convert to Date at midnight local time, then to ISO string
-      const date = new Date(selectedPaidDate + "T00:00:00");
-
-      // First update the paid date
-      const paidDateResult = await updateInvoicePaidDate(id, date);
-      if (paidDateResult.error) {
-        toast({ title: "Fehler", description: paidDateResult.error, variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-
-      // Then update the status (only if not already paid)
-      if (!isPaid) {
-        const statusResult = await updateInvoiceStatus(id, "PAID");
-        if (statusResult.error) {
-          toast({ title: "Fehler", description: statusResult.error, variant: "destructive" });
-          setLoading(false);
-          return;
-        }
-      }
-
-      toast({ title: isPaid ? "Bezahlt-Datum aktualisiert" : "Rechnung als bezahlt markiert" });
-      setShowPaidDateInput(false);
-      router.refresh();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Show edit paid date button even for PAID invoices
-  if (currentStatus === "CANCELLED") return null;
-
-  const isPaid = currentStatus === "PAID";
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{isPaid ? "Bezahlt-Datum" : "Status ändern"}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="border border-border bg-card p-4 space-y-3" style={{ borderRadius: "2px" }}>
+      <p className="text-sm font-medium text-foreground">
+        {isPaid ? "Bezahlt-Datum bearbeiten" : "Als bezahlt markieren"}
+      </p>
+
+      {!showDateInput ? (
         <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => setShowDateInput(true)}
+            disabled={loading}
+            size="sm"
+            className={isPaid ? "" : "bg-[#52B876] hover:bg-[#3FA364] text-white"}
+            variant={isPaid ? "outline" : "default"}
+          >
+            {isPaid ? "Datum bearbeiten" : "Als bezahlt markieren"}
+          </Button>
           {!isPaid && (
-            <>
-              {currentStatus === "DRAFT" && (
-                <Button onClick={() => handleStatusChange("SENT")} disabled={loading} variant="outline">
-                  Als versendet markieren
-                </Button>
-              )}
-              {(currentStatus === "DRAFT" || currentStatus === "SENT") && (
-                <Button
-                  onClick={() => setShowPaidDateInput(!showPaidDateInput)}
-                  disabled={loading}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Als bezahlt markieren
-                </Button>
-              )}
-              <Button onClick={() => handleStatusChange("CANCELLED")} disabled={loading} variant="destructive">
-                Stornieren
-              </Button>
-            </>
-          )}
-          {isPaid && (
-            <Button
-              onClick={() => setShowPaidDateInput(!showPaidDateInput)}
-              disabled={loading}
-              variant="outline"
-            >
-              Bezahlt-Datum bearbeiten
+            <Button onClick={handleCancel} disabled={loading} variant="destructive" size="sm">
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Stornieren"}
             </Button>
           )}
         </div>
-
-        {showPaidDateInput && (
-          <div className="border-t pt-4 space-y-3">
-            <div>
-              <Label htmlFor="paidDate">Bezahlt am</Label>
-              <Input
-                id="paidDate"
-                type="date"
-                value={selectedPaidDate}
-                onChange={(e) => setSelectedPaidDate(e.target.value)}
-                className="mt-2"
-              />
-              <p className="text-xs text-gray-500 mt-1">Wählen Sie das Datum, an dem die Rechnung bezahlt wurde.</p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleMarkAsPaid} disabled={loading} className="bg-green-600 hover:bg-green-700">
-                Bestätigen
-              </Button>
-              <Button onClick={() => setShowPaidDateInput(false)} disabled={loading} variant="outline">
-                Abbrechen
-              </Button>
-            </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor="paidDate" className="text-xs text-muted-foreground">Bezahlt am</Label>
+            <Input
+              id="paidDate"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="h-8 text-sm max-w-[200px]"
+            />
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleMarkAsPaid} disabled={loading} className="bg-[#52B876] hover:bg-[#3FA364] text-white">
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Bestätigen"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowDateInput(false)} disabled={loading}>
+              Abbrechen
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

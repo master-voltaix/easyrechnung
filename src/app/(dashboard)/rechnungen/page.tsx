@@ -6,10 +6,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { RechnungenClient } from "./rechnungen-client";
+import { getServerLanguage } from "@/lib/get-server-language";
 
 export default async function RechnungenPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  const { t } = getServerLanguage();
 
   const invoices = await prisma.invoice.findMany({
     where: { userId: session.user.id },
@@ -28,13 +30,13 @@ export default async function RechnungenPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
-          <p className="text-gray-600 mt-1">{invoices.length} Rechnungen gesamt</p>
+          <h1 className="text-2xl font-bold text-foreground">{t.invoices.title}</h1>
+          <p className="text-muted-foreground mt-1">{invoices.length} {t.invoices.total}</p>
         </div>
         <Link href="/rechnungen/neu">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Neue Rechnung
+            {t.invoices.new}
           </Button>
         </Link>
       </div>

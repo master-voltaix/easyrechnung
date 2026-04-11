@@ -9,10 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil } from "lucide-react";
 import { DeleteCustomerButton } from "./delete-button";
 import { CustomerViewModal } from "./customer-view-modal";
+import { getServerLanguage } from "@/lib/get-server-language";
 
 export default async function KundenPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  const { t } = getServerLanguage();
 
   const customers = await prisma.customer.findMany({
     where: { userId: session.user.id },
@@ -23,13 +25,13 @@ export default async function KundenPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kunden</h1>
-          <p className="text-gray-600 mt-1">{customers.length} Kunden gesamt</p>
+          <h1 className="text-2xl font-bold text-foreground">{t.customers.title}</h1>
+          <p className="text-muted-foreground mt-1">{customers.length} {t.customers.total}</p>
         </div>
         <Link href="/kunden/neu">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Neuer Kunde
+            {t.customers.new}
           </Button>
         </Link>
       </div>
@@ -37,12 +39,12 @@ export default async function KundenPage() {
       <Card>
         <CardContent className="p-0">
           {customers.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <p className="mb-4">Noch keine Kunden angelegt.</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="mb-4">{t.customers.noCustomers}</p>
               <Link href="/kunden/neu">
                 <Button variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
-                  Ersten Kunden anlegen
+                  {t.customers.createFirst}
                 </Button>
               </Link>
             </div>
@@ -50,11 +52,11 @@ export default async function KundenPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Firmenname</TableHead>
-                  <TableHead>Ansprechpartner</TableHead>
-                  <TableHead>E-Mail</TableHead>
-                  <TableHead>Ort</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  <TableHead>{t.customers.companyName}</TableHead>
+                  <TableHead>{t.customers.contactPerson}</TableHead>
+                  <TableHead>{t.customers.email}</TableHead>
+                  <TableHead>{t.customers.city}</TableHead>
+                  <TableHead className="text-right">{t.customers.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

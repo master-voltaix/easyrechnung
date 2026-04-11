@@ -1,23 +1,37 @@
-import { Badge } from "@/components/ui/badge";
+"use client";
 
-type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "CANCELLED";
+import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language-provider";
 
 interface StatusBadgeProps {
   status: string;
 }
 
-const statusConfig: Record<string, { label: string; variant: "muted" | "info" | "success" | "destructive" }> = {
-  DRAFT: { label: "Entwurf", variant: "muted" },
-  SENT: { label: "Versendet", variant: "info" },
-  PAID: { label: "Bezahlt", variant: "success" },
-  CANCELLED: { label: "Storniert", variant: "destructive" },
+const variantMap: Record<string, "muted" | "info" | "success" | "destructive"> = {
+  DRAFT: "muted",
+  PAID: "success",
+  CANCELLED: "destructive",
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const config = statusConfig[status] || { label: status, variant: "muted" as const };
-  return <Badge variant={config.variant as any}>{config.label}</Badge>;
+  const { t } = useLanguage();
+
+  const labelMap: Record<string, string> = {
+    DRAFT: t.invoices.draft,
+    PAID: t.invoices.paid,
+    CANCELLED: t.invoices.cancelled,
+  };
+
+  const label = labelMap[status] ?? status;
+  const variant = variantMap[status] ?? "muted";
+
+  return <Badge variant={variant as any}>{label}</Badge>;
 }
 
-export function getStatusLabel(status: string): string {
-  return statusConfig[status]?.label || status;
+export function getStatusLabel(status: string, lang: "de" | "en" = "de"): string {
+  const labels: Record<string, Record<string, string>> = {
+    de: { DRAFT: "Entwurf", PAID: "Bezahlt", CANCELLED: "Storniert" },
+    en: { DRAFT: "Draft", PAID: "Paid", CANCELLED: "Cancelled" },
+  };
+  return labels[lang]?.[status] ?? status;
 }

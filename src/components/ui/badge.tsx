@@ -3,18 +3,26 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center border px-2 py-0.5 text-[11px] font-semibold tracking-wider uppercase transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
-        success: "border-transparent bg-green-100 text-green-800",
-        warning: "border-transparent bg-yellow-100 text-yellow-800",
-        info: "border-transparent bg-blue-100 text-blue-800",
-        muted: "border-transparent bg-gray-100 text-gray-800",
+        default:
+          "border-transparent bg-foreground text-background",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground",
+        destructive:
+          "border-transparent bg-destructive/10 text-destructive border-destructive/30",
+        outline:
+          "text-foreground border-border",
+        success:
+          "border-transparent bg-emerald-50 text-emerald-700 border-emerald-200",
+        warning:
+          "border-transparent bg-amber-50 text-amber-700 border-amber-200",
+        info:
+          "border-transparent bg-sky-50 text-sky-700 border-sky-200",
+        muted:
+          "border-transparent bg-muted text-muted-foreground",
       },
     },
     defaultVariants: {
@@ -29,7 +37,11 @@ export interface BadgeProps
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(badgeVariants({ variant }), className)}
+      style={{ borderRadius: "2px", fontFamily: "var(--font-mono), 'IBM Plex Mono', monospace" }}
+      {...props}
+    />
   );
 }
 

@@ -11,8 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { createInvoice } from "@/lib/actions/invoices";
+import { createCustomer } from "@/lib/actions/customers";
 import { formatEuro } from "@/lib/utils";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserPlus, X } from "lucide-react";
 
 interface Customer {
   id: string;
@@ -63,24 +64,26 @@ export default function NeueRechnungPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Customer selection
   const [customerId, setCustomerId] = useState("");
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [newCustomerStreet, setNewCustomerStreet] = useState("");
+  const [newCustomerPostal, setNewCustomerPostal] = useState("");
+  const [newCustomerCity, setNewCustomerCity] = useState("");
+  const [savingCustomer, setSavingCustomer] = useState(false);
+
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState("");
   const [serviceDate, setServiceDate] = useState("");
   const [customNote, setCustomNote] = useState("");
   const [internalNote, setInternalNote] = useState("");
   const [recurringType, setRecurringType] = useState<"NONE" | "DAILY" | "WEEKLY" | "MONTHLY">("NONE");
+  const templateKey = "classic";
 
   const [items, setItems] = useState<LineItem[]>([
-    {
-      id: generateId(),
-      title: "",
-      description: "",
-      quantity: 1,
-      unit: "Stk.",
-      unitPrice: 0,
-      vatRate: 19,
-    },
+    { id: generateId(), title: "", description: "", quantity: 1, unit: "Stk.", unitPrice: 0, vatRate: 19 },
   ]);
 
   useEffect(() => {
@@ -88,7 +91,6 @@ export default function NeueRechnungPage() {
     fetch("/api/produkte/list").then(r => r.json()).then(d => setProducts(d.products ?? []));
 
     if (copyId) {
-      // Pre-fill from existing invoice
       fetch(`/api/rechnungen/${copyId}`).then(r => r.json()).then(d => {
         if (d.invoice) {
           const inv = d.invoice;
@@ -108,27 +110,16 @@ export default function NeueRechnungPage() {
         }
       });
     } else {
-      // Pre-fill default note from company profile
       fetch("/api/company/profile").then(r => r.json()).then(d => {
-        if (d.profile?.defaultInvoiceNote) {
-          setCustomNote(d.profile.defaultInvoiceNote);
-        }
+        if (d.profile?.defaultInvoiceNote) setCustomNote(d.profile.defaultInvoiceNote);
       });
     }
   }, [copyId]);
 
   const addItem = () => {
-    setItems([
-      ...items,
-      {
-        id: generateId(),
-        title: "",
-        description: "",
-        quantity: 1,
-        unit: "Stk.",
-        unitPrice: 0,
-        vatRate: 19,
-      },
+    setItems(prev => [
+      ...prev,
+      { id: generateId(), title: "", description: "", quantity: 1, unit: "Stk.", unitPrice: 0, vatRate: 19 },
     ]);
   };
 
@@ -140,20 +131,52 @@ export default function NeueRechnungPage() {
     setItems(items.map((item) => (item.id === id ? { ...item, ...updates } : item)));
   };
 
+  // Add pre-made product to TOP of items list
   const addProductAsItem = (product: Product) => {
-    setItems([
-      ...items,
-      {
-        id: generateId(),
-        productId: product.id,
-        title: product.title,
-        description: product.description ?? "",
-        quantity: 1,
-        unit: product.unit,
-        unitPrice: product.unitPrice,
-        vatRate: product.vatRate,
-      },
-    ]);
+    const newItem: LineItem = {
+      id: generateId(),
+      productId: product.id,
+      title: product.title,
+      description: product.description ?? "",
+      quantity: 1,
+      unit: product.unit,
+      unitPrice: product.unitPrice,
+      vatRate: product.vatRate,
+    };
+    setItems(prev => [newItem, ...prev]);
+  };
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomerName.trim()) {
+      toast({ title: "Fehler", description: "Firmenname ist erforderlich.", variant: "destructive" });
+      return;
+    }
+    setSavingCustomer(true);
+    try {
+      const result = await createCustomer({
+        companyName: newCustomerName.trim(),
+        email: newCustomerEmail.trim() || undefined,
+        street: newCustomerStreet.trim() || undefined,
+        postalCode: newCustomerPostal.trim() || undefined,
+        city: newCustomerCity.trim() || undefined,
+      });
+      if (result.error) {
+        toast({ title: "Fehler", description: result.error, variant: "destructive" });
+      } else if (result.customer) {
+        const newC: Customer = { id: result.customer.id, companyName: result.customer.companyName };
+        setCustomers(prev => [newC, ...prev]);
+        setCustomerId(result.customer!.id);
+        setShowNewCustomer(false);
+        setNewCustomerName("");
+        setNewCustomerEmail("");
+        setNewCustomerStreet("");
+        setNewCustomerPostal("");
+        setNewCustomerCity("");
+        toast({ title: "Kunde erstellt", description: `"${result.customer.companyName}" wurde angelegt.` });
+      }
+    } finally {
+      setSavingCustomer(false);
+    }
   };
 
   const subtotalNet = items.reduce((sum, item) => sum + calcLineTotals(item).net, 0);
@@ -167,7 +190,7 @@ export default function NeueRechnungPage() {
       return;
     }
     if (items.length === 0 || items.every(i => !i.title)) {
-      toast({ title: "Fehler", description: "Bitte fügen Sie mindestens eine Position hinzu.", variant: "destructive" });
+      toast({ title: "Fehler", description: "Bitte fügen Sie mindestens ein Produkt hinzu.", variant: "destructive" });
       return;
     }
 
@@ -181,6 +204,7 @@ export default function NeueRechnungPage() {
         customNote: customNote || undefined,
         internalNote: internalNote || undefined,
         recurringType,
+        templateKey,
         items: items
           .filter((i) => i.title)
           .map((item, index) => ({
@@ -209,11 +233,11 @@ export default function NeueRechnungPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/rechnungen" className="flex items-center text-gray-600 hover:text-gray-900 mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
+        <Link href="/rechnungen" className="flex items-center text-muted-foreground hover:text-foreground mb-4 text-sm gap-1">
+          <ArrowLeft className="h-4 w-4" />
           Zurück zu Rechnungen
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">{copyId ? "Rechnung kopieren" : "Neue Rechnung"}</h1>
+        <h1 className="text-2xl font-bold text-foreground">{copyId ? "Rechnung kopieren" : "Neue Rechnung"}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -222,54 +246,109 @@ export default function NeueRechnungPage() {
           <CardHeader>
             <CardTitle>Rechnungsdetails</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="customer">Kunde *</Label>
-              <select
-                id="customer"
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">Kunde auswählen...</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.companyName}
-                  </option>
-                ))}
-              </select>
+          <CardContent className="space-y-4">
+            {/* Customer selector — 2-column layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {/* Left: existing customer dropdown */}
+              <div className="space-y-2">
+                <Label htmlFor="customer">Kunde *</Label>
+                <select
+                  id="customer"
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  className="flex h-10 w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  style={{ borderRadius: "2px" }}
+                >
+                  <option value="">Kunde auswählen...</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>{c.companyName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Right: new customer panel */}
+              <div className="space-y-2">
+                <Label className="invisible md:visible">Neuer Kunde</Label>
+                {!showNewCustomer ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCustomer(true)}
+                    className="flex items-center gap-1.5 h-10 px-3 w-full border border-dashed border-input bg-background text-sm text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+                    style={{ borderRadius: "2px" }}
+                  >
+                    <UserPlus className="h-4 w-4 shrink-0" />
+                    Neuen Kunden anlegen
+                  </button>
+                ) : (
+                  <div className="border border-border p-4 space-y-3 bg-secondary/30" style={{ borderRadius: "2px" }}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-mono font-medium tracking-widest text-muted-foreground uppercase">Neuer Kunde</p>
+                      <button type="button" onClick={() => setShowNewCustomer(false)} className="text-muted-foreground hover:text-foreground">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Firmenname *</Label>
+                        <Input placeholder="Muster GmbH" value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">E-Mail</Label>
+                        <Input type="email" placeholder="info@kunde.de" value={newCustomerEmail} onChange={(e) => setNewCustomerEmail(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Straße</Label>
+                        <Input placeholder="Musterstraße 1" value={newCustomerStreet} onChange={(e) => setNewCustomerStreet(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">PLZ</Label>
+                        <Input placeholder="12345" value={newCustomerPostal} onChange={(e) => setNewCustomerPostal(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Ort</Label>
+                        <Input placeholder="Berlin" value={newCustomerCity} onChange={(e) => setNewCustomerCity(e.target.value)} />
+                      </div>
+                    </div>
+                    <Button type="button" size="sm" onClick={handleCreateCustomer} disabled={savingCustomer || !newCustomerName.trim()}>
+                      {savingCustomer ? "Wird gespeichert..." : "Kunde anlegen & auswählen"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="issueDate">Ausstellungsdatum *</Label>
-              <Input
-                id="issueDate"
-                type="date"
-                value={issueDate}
-                onChange={(e) => setIssueDate(e.target.value)}
-                required
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="issueDate">Ausstellungsdatum *</Label>
+                <Input id="issueDate" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Fälligkeitsdatum</Label>
+                <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <div className="flex gap-1.5">
+                  {[7, 14, 30, 90].map((days) => (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => {
+                        const base = issueDate ? new Date(issueDate) : new Date();
+                        base.setDate(base.getDate() + days);
+                        setDueDate(base.toISOString().split("T")[0]);
+                      }}
+                      className="px-2 py-1 text-xs border border-input bg-background hover:bg-secondary hover:border-foreground transition-colors"
+                      style={{ borderRadius: "2px" }}
+                    >
+                      +{days} Tage
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="serviceDate">Leistungsdatum</Label>
+                <Input id="serviceDate" type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="dueDate">Fälligkeitsdatum</Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="serviceDate">Leistungsdatum</Label>
-              <Input
-                id="serviceDate"
-                type="date"
-                value={serviceDate}
-                onChange={(e) => setServiceDate(e.target.value)}
-              />
-            </div>
           </CardContent>
         </Card>
 
@@ -282,16 +361,17 @@ export default function NeueRechnungPage() {
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {products.map((product) => (
-                  <Button
+                  <button
                     key={product.id}
                     type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={() => addProductAsItem(product)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border hover:border-[#52B876] hover:bg-[#52B876]/5 transition-colors duration-150 text-left"
+                    style={{ borderRadius: "2px" }}
                   >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {product.title}
-                  </Button>
+                    <Plus className="h-3.5 w-3.5 text-[#52B876] shrink-0" />
+                    <span className="font-medium">{product.title}</span>
+                    <span className="text-muted-foreground font-mono text-xs ml-1">{formatEuro(product.unitPrice)}</span>
+                  </button>
                 ))}
               </div>
             </CardContent>
@@ -301,10 +381,10 @@ export default function NeueRechnungPage() {
         {/* Line items */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Positionen</CardTitle>
+            <CardTitle>Produkt / Leistung</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={addItem}>
               <Plus className="h-4 w-4 mr-1" />
-              Position hinzufügen
+              Manuell hinzufügen
             </Button>
           </CardHeader>
           <CardContent>
@@ -350,10 +430,7 @@ export default function NeueRechnungPage() {
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            value={item.unit}
-                            onChange={(e) => updateItem(item.id, { unit: e.target.value })}
-                          />
+                          <Input value={item.unit} onChange={(e) => updateItem(item.id, { unit: e.target.value })} />
                         </TableCell>
                         <TableCell>
                           <Input
@@ -374,9 +451,7 @@ export default function NeueRechnungPage() {
                             onChange={(e) => updateItem(item.id, { vatRate: parseFloat(e.target.value) || 0 })}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {formatEuro(gross)}
-                        </TableCell>
+                        <TableCell className="font-medium font-mono text-sm">{formatEuro(gross)}</TableCell>
                         <TableCell>
                           <Button
                             type="button"
@@ -385,7 +460,7 @@ export default function NeueRechnungPage() {
                             onClick={() => removeItem(item.id)}
                             disabled={items.length === 1}
                           >
-                            <Trash2 className="h-4 w-4 text-red-500" />
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -399,16 +474,16 @@ export default function NeueRechnungPage() {
             <div className="mt-6 flex justify-end">
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Gesamt (exkl. MwSt.)</span>
-                  <span>{formatEuro(subtotalNet)}</span>
+                  <span className="text-muted-foreground">Gesamt (exkl. MwSt.)</span>
+                  <span className="font-mono">{formatEuro(subtotalNet)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">USt. Betrag</span>
-                  <span>{formatEuro(totalVat)}</span>
+                  <span className="text-muted-foreground">USt. Betrag</span>
+                  <span className="font-mono">{formatEuro(totalVat)}</span>
                 </div>
-                <div className="flex justify-between text-base font-bold border-t pt-2">
+                <div className="flex justify-between text-base font-bold border-t border-border pt-2">
                   <span>Gesamt</span>
-                  <span>{formatEuro(totalGross)}</span>
+                  <span className="font-mono">{formatEuro(totalGross)}</span>
                 </div>
               </div>
             </div>
@@ -424,21 +499,19 @@ export default function NeueRechnungPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(["NONE", "MONTHLY", "WEEKLY", "DAILY"] as const).map((type) => {
                 const labels: Record<string, string> = {
-                  NONE: "Einmalig",
-                  MONTHLY: "Monatlich",
-                  WEEKLY: "Wöchentlich",
-                  DAILY: "Täglich",
+                  NONE: "Einmalig", MONTHLY: "Monatlich", WEEKLY: "Wöchentlich", DAILY: "Täglich",
                 };
                 return (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setRecurringType(type)}
-                    className={`rounded-md border px-4 py-3 text-sm font-medium transition-colors ${
+                    className={`border px-4 py-3 text-sm font-medium transition-colors ${
                       recurringType === type
-                        ? "border-gray-900 bg-gray-900 text-white"
-                        : "border-input bg-background hover:bg-gray-50"
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-input bg-background hover:bg-secondary"
                     }`}
+                    style={{ borderRadius: "2px" }}
                   >
                     {labels[type]}
                   </button>
@@ -446,12 +519,12 @@ export default function NeueRechnungPage() {
               })}
             </div>
             {recurringType !== "NONE" && (
-              <p className="mt-3 text-sm text-gray-500">
+              <p className="mt-3 text-sm text-muted-foreground">
                 Diese Rechnung wird als{" "}
-                <strong>
+                <strong className="text-foreground">
                   {recurringType === "MONTHLY" ? "monatlich wiederkehrend" : recurringType === "WEEKLY" ? "wöchentlich wiederkehrend" : "täglich wiederkehrend"}
                 </strong>{" "}
-                gespeichert. Sie können später für jeden Zeitraum einzeln eine PDF herunterladen.
+                gespeichert.
               </p>
             )}
           </CardContent>
@@ -475,12 +548,7 @@ export default function NeueRechnungPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="internalNote">Interne Notiz (erscheint nicht auf der Rechnung)</Label>
-              <Textarea
-                id="internalNote"
-                value={internalNote}
-                onChange={(e) => setInternalNote(e.target.value)}
-                rows={2}
-              />
+              <Textarea id="internalNote" value={internalNote} onChange={(e) => setInternalNote(e.target.value)} rows={2} />
             </div>
           </CardContent>
         </Card>

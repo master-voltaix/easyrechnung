@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "CANCELLED";
+type InvoiceStatus = "DRAFT" | "PAID" | "CANCELLED";
 
 interface InvoiceItemInput {
   productId?: string;
@@ -28,11 +28,13 @@ interface CreateInvoiceInput {
   customNote?: string;
   internalNote?: string;
   recurringType?: RecurringType;
+  templateKey?: string;
   items: InvoiceItemInput[];
 }
 
 interface UpdateInvoiceInput extends CreateInvoiceInput {
   status?: InvoiceStatus;
+  templateKey?: string;
 }
 
 function calculateTotals(items: InvoiceItemInput[]) {
@@ -101,6 +103,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
         customNote: input.customNote,
         internalNote: input.internalNote,
         recurringType: input.recurringType ?? "NONE",
+        templateKey: input.templateKey ?? "classic",
         status: "DRAFT",
         items: {
           create: calculatedItems.map((item) => ({
@@ -167,6 +170,7 @@ export async function updateInvoice(id: string, input: UpdateInvoiceInput) {
         customNote: input.customNote,
         internalNote: input.internalNote,
         recurringType: input.recurringType ?? existing.recurringType,
+        templateKey: input.templateKey ?? existing.templateKey,
         status: input.status ?? existing.status,
         items: {
           create: calculatedItems.map((item) => ({

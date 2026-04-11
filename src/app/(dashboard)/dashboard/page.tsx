@@ -10,10 +10,12 @@ import {
   getStatusDistributionByDateRange,
   getInvoiceMetricsByDateRange,
 } from "@/lib/actions/invoice-analytics";
+import { getServerLanguage } from "@/lib/get-server-language";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  const { t } = getServerLanguage();
 
   const userId = session.user.id;
 
@@ -41,8 +43,8 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Willkommen bei EasyRechnung</p>
+        <h1 className="text-2xl font-bold text-foreground">{t.dashboard.title}</h1>
+        <p className="text-muted-foreground mt-1">{t.dashboard.welcome}</p>
       </div>
 
       {/* Client-side dashboard with charts */}
@@ -57,7 +59,7 @@ export default async function DashboardPage() {
       {/* Recent Invoices Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Letzte Rechnungen</CardTitle>
+          <CardTitle>{t.dashboard.recentInvoices}</CardTitle>
         </CardHeader>
         <CardContent>
           <RecentInvoicesTable

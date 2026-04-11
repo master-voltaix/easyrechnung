@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Upload } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,7 +54,6 @@ const companySchema = z.object({
   bankName: z.string().optional(),
   accountHolder: z.string().optional(),
   defaultInvoiceNote: z.string().optional(),
-  accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Ungültiges Farbformat").optional(),
 });
 
 type CompanyFormData = z.infer<typeof companySchema>;
@@ -67,12 +67,12 @@ export function FirmenprofilForm({ initialProfile }: FirmenprofilFormProps) {
   const [loading, setLoading] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(initialProfile?.logoUrl ?? null);
+  const [logoCacheBust, setLogoCacheBust] = useState(() => Date.now());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors },
   } = useForm<CompanyFormData>({
     resolver: zodResolver(companySchema),
@@ -92,11 +92,8 @@ export function FirmenprofilForm({ initialProfile }: FirmenprofilFormProps) {
       bankName: initialProfile?.bankName ?? "",
       accountHolder: initialProfile?.accountHolder ?? "",
       defaultInvoiceNote: initialProfile?.defaultInvoiceNote ?? "",
-      accentColor: initialProfile?.accentColor ?? "#1f2937",
     },
   });
-
-  const watchedColor = watch("accentColor") ?? "#1f2937";
 
   const onSubmit = async (data: CompanyFormData) => {
     setLoading(true);
@@ -125,6 +122,8 @@ export function FirmenprofilForm({ initialProfile }: FirmenprofilFormProps) {
       const data = await res.json();
       if (data.url) {
         setLogoUrl(data.url);
+        setLogoCacheBust(Date.now());
+        if (fileInputRef.current) fileInputRef.current.value = "";
         toast({ title: "Logo hochgeladen", description: "Logo wurde erfolgreich hochgeladen." });
       }
     } catch {
@@ -152,46 +151,27 @@ export function FirmenprofilForm({ initialProfile }: FirmenprofilFormProps) {
               {logoUrl && (
                 <div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={logoUrl} alt="Logo" className="h-16 object-contain border rounded p-2" />
+                  <img src={`${logoUrl}?v=${logoCacheBust}`} alt="Logo" className="h-16 object-contain border rounded p-2" />
                 </div>
               )}
-              <Input type="file" accept="image/*" onChange={handleLogoUpload} disabled={logoUploading} />
-              {logoUploading && <p className="text-sm text-gray-500">Wird hochgeladen...</p>}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Designfarbe</CardTitle>
-              <CardDescription>Wählen Sie die Akzentfarbe für Ihre Rechnungen (wird in Kopfzeilen und Borders verwendet).</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="accentColor">Designfarbe für Rechnungen</Label>
-                <div className="flex items-center gap-3">
-                  <label className="cursor-pointer shrink-0" title="Farbe wählen">
-                    <div
-                      className="w-9 h-9 rounded-md border border-border"
-                      style={{ backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(watchedColor) ? watchedColor : "#1f2937" }}
-                    />
-                    <input
-                      type="color"
-                      value={/^#[0-9A-Fa-f]{6}$/.test(watchedColor) ? watchedColor : "#1f2937"}
-                      onChange={(e) => setValue("accentColor", e.target.value)}
-                      className="sr-only"
-                    />
-                  </label>
-                  <Input
-                    id="accentColor"
-                    type="text"
-                    placeholder="#1f2937"
-                    maxLength={7}
-                    className="font-mono w-36"
-                    {...register("accentColor")}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Farbfeld anklicken oder Hex-Code eingeben, z.B. #2563eb</p>
-                {errors.accentColor && <p className="text-sm text-red-500">{errors.accentColor.message}</p>}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={logoUploading}
+                  className="sr-only"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={logoUploading}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {logoUploading ? "Wird hochgeladen..." : "Logo hinzufügen"}
+                </Button>
               </div>
             </CardContent>
           </Card>

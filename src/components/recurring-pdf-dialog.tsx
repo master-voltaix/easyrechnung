@@ -13,6 +13,8 @@ interface RecurringPdfDialogProps {
   invoiceId: string;
   invoiceNumber: string;
   recurringType: "DAILY" | "WEEKLY" | "MONTHLY";
+  /** Original invoice issue date — used to preserve the day-of-month for monthly recurrences */
+  issueDate?: Date | string | null;
 }
 
 function getMonthName(month: number, year: number) {
@@ -35,8 +37,12 @@ function toDateString(d: Date) {
   return d.toISOString().split("T")[0];
 }
 
-export function RecurringPdfDialog({ open, onClose, invoiceId, invoiceNumber, recurringType }: RecurringPdfDialogProps) {
+export function RecurringPdfDialog({ open, onClose, invoiceId, invoiceNumber, recurringType, issueDate }: RecurringPdfDialogProps) {
   const today = new Date();
+
+  // Extract the original day-of-month from the invoice issue date (default to 1 if not provided)
+  const originalDay = issueDate ? new Date(issueDate).getDate() : 1;
+
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
   const [week, setWeek] = useState(() => {
@@ -54,9 +60,18 @@ export function RecurringPdfDialog({ open, onClose, invoiceId, invoiceNumber, re
   function buildUrl() {
     const base = `/api/rechnungen/${invoiceId}/pdf/recurring`;
     if (recurringType === "MONTHLY") {
-      const from = `${year}-${String(month).padStart(2, "0")}-01`;
-      const lastDay = new Date(year, month, 0).getDate();
-      const to = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+      // Clamp the original day to the actual number of days in the selected month
+      const daysInFromMonth = new Date(year, month, 0).getDate();
+      const fromDay = Math.min(originalDay, daysInFromMonth);
+      const from = `${year}-${String(month).padStart(2, "0")}-${String(fromDay).padStart(2, "0")}`;
+
+      // "To" = same day of the following month (clamped if needed)
+      const toMonth = month === 12 ? 1 : month + 1;
+      const toYear = month === 12 ? year + 1 : year;
+      const daysInToMonth = new Date(toYear, toMonth, 0).getDate();
+      const toDay = Math.min(originalDay, daysInToMonth);
+      const to = `${toYear}-${String(toMonth).padStart(2, "0")}-${String(toDay).padStart(2, "0")}`;
+
       return `${base}?from=${from}&to=${to}`;
     }
     if (recurringType === "WEEKLY") {
@@ -143,7 +158,24 @@ export function RecurringPdfDialog({ open, onClose, invoiceId, invoiceNumber, re
                 </div>
               </div>
               <div className="rounded-md bg-gray-50 px-4 py-2 text-sm text-gray-700">
-                Zeitraum: <strong>{getMonthName(month, year)}</strong>
+                {(() => {
+                  const daysInFrom = new Date(year, month, 0).getDate();
+                  const fromDay = Math.min(originalDay, daysInFrom);
+                  const toMonth = month === 12 ? 1 : month + 1;
+                  const toYear = month === 12 ? year + 1 : year;
+                  const daysInTo = new Date(toYear, toMonth, 0).getDate();
+                  const toDay = Math.min(originalDay, daysInTo);
+                  const fromDate = new Date(year, month - 1, fromDay);
+                  const toDate = new Date(toYear, toMonth - 1, toDay);
+                  return (
+                    <>
+                      Leistungsdatum:{" "}
+                      <strong>
+                        {fromDate.toLocaleDateString("de-DE")} – {toDate.toLocaleDateString("de-DE")}
+                      </strong>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}

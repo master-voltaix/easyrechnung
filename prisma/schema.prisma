@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin-arm64"]
 }
 
 datasource db {
@@ -11,17 +12,18 @@ datasource db {
 }
 
 model User {
-  id           String          @id @default(cuid())
-  name         String?
-  email        String          @unique
-  passwordHash String
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  company      CompanyProfile?
-  customers    Customer[]
-  products     Product[]
-  invoices     Invoice[]
-  expenses     Expense[]
+  id               String            @id @default(cuid())
+  name             String?
+  email            String            @unique
+  passwordHash     String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  company          CompanyProfile?
+  customers        Customer[]
+  products         Product[]
+  invoices         Invoice[]
+  expenses         Expense[]
+  invoiceTemplates InvoiceTemplate[]
 }
 
 model CompanyProfile {
@@ -102,10 +104,11 @@ model Invoice {
   discountValue  Decimal?
   customNote     String?
   internalNote   String?
-  recurringType  String    @default("NONE")
-  items         InvoiceItem[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  recurringType  String        @default("NONE")
+  templateKey    String        @default("classic")
+  items          InvoiceItem[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@unique([userId, invoiceNumber])
 }
@@ -139,4 +142,17 @@ model Expense {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model InvoiceTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  name      String
+  settings  String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
 }

@@ -64,7 +64,6 @@ export async function GET(
         : null,
       customNote: invoice.customNote,
       paymentDays: paymentDays,
-      accentColor: company.accentColor,
       customer: {
         companyName: invoice.customer.companyName,
         contactPerson: invoice.customer.contactPerson,

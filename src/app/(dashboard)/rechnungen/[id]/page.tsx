@@ -50,6 +50,7 @@ export default async function RechnungDetailPage({ params }: { params: { id: str
               invoiceId={invoice.id}
               invoiceNumber={invoice.invoiceNumber}
               recurringType={invoice.recurringType as "DAILY" | "WEEKLY" | "MONTHLY"}
+              issueDate={invoice.issueDate}
             />
           ) : (
             <a href={`/api/rechnungen/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
@@ -228,7 +229,7 @@ export default async function RechnungDetailPage({ params }: { params: { id: str
 
       <InvoiceStatusActions
         id={invoice.id}
-        currentStatus={invoice.status as "DRAFT" | "SENT" | "PAID" | "CANCELLED"}
+        currentStatus={invoice.status as "DRAFT" | "PAID" | "CANCELLED"}
         paidDate={invoice.paidDate}
       />
     </div>

@@ -7,7 +7,9 @@ import { StatusBadge } from "@/components/status-badge";
 import { MarkAsPaidButton } from "@/components/mark-as-paid-button";
 import { InvoicePdfPreviewButton } from "@/components/invoice-pdf-preview-button";
 import { formatEuro, formatDate } from "@/lib/utils";
-import { Eye, Download, Pencil } from "lucide-react";
+import { Download, Pencil } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
+import { DeleteInvoiceButton } from "@/app/(dashboard)/rechnungen/delete-button";
 
 interface Invoice {
   id: string;
@@ -18,17 +20,15 @@ interface Invoice {
   customer: { companyName: string };
 }
 
-interface Props {
-  invoices: Invoice[];
-}
+export function RecentInvoicesTable({ invoices }: { invoices: Invoice[] }) {
+  const { t } = useLanguage();
 
-export function RecentInvoicesTable({ invoices }: Props) {
   if (invoices.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        <p>Noch keine Rechnungen vorhanden.</p>
-        <Link href="/rechnungen/neu" className="text-blue-600 hover:underline mt-2 inline-block">
-          Erste Rechnung erstellen
+      <div className="text-center py-8 text-muted-foreground">
+        <p>{t.invoices.noInvoices}</p>
+        <Link href="/rechnungen/neu" className="text-primary hover:underline mt-2 inline-block text-sm font-medium">
+          {t.invoices.createFirst}
         </Link>
       </div>
     );
@@ -38,25 +38,25 @@ export function RecentInvoicesTable({ invoices }: Props) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Nummer</TableHead>
-          <TableHead>Kunde</TableHead>
-          <TableHead>Datum</TableHead>
-          <TableHead>Betrag</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Aktionen</TableHead>
+          <TableHead>{t.invoices.number}</TableHead>
+          <TableHead>{t.invoices.customer}</TableHead>
+          <TableHead>{t.invoices.date}</TableHead>
+          <TableHead>{t.invoices.amount}</TableHead>
+          <TableHead>{t.invoices.status}</TableHead>
+          <TableHead className="text-right">{t.invoices.actions}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {invoices.map((invoice) => (
           <TableRow key={invoice.id}>
             <TableCell>
-              <Link href={`/rechnungen/${invoice.id}`} className="text-blue-600 hover:underline font-medium">
+              <Link href={`/rechnungen/${invoice.id}`} className="text-primary hover:underline font-medium font-mono text-sm">
                 {invoice.invoiceNumber}
               </Link>
             </TableCell>
             <TableCell>{invoice.customer.companyName}</TableCell>
-            <TableCell>{formatDate(invoice.issueDate)}</TableCell>
-            <TableCell>{formatEuro(invoice.totalGross)}</TableCell>
+            <TableCell className="font-mono text-sm">{formatDate(invoice.issueDate)}</TableCell>
+            <TableCell className="font-mono text-sm">{formatEuro(invoice.totalGross)}</TableCell>
             <TableCell>
               <StatusBadge status={invoice.status} />
             </TableCell>
@@ -65,17 +65,18 @@ export function RecentInvoicesTable({ invoices }: Props) {
                 <InvoicePdfPreviewButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} iconOnly />
                 {invoice.status !== "PAID" && (
                   <Link href={`/rechnungen/${invoice.id}/bearbeiten`}>
-                    <Button variant="ghost" size="icon" title="Bearbeiten">
+                    <Button variant="ghost" size="icon" title={t.invoices.edit}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </Link>
                 )}
-                <a href={`/api/rechnungen/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer" title="PDF herunterladen">
+                <a href={`/api/rechnungen/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer" title={t.invoices.downloadPdf}>
                   <Button variant="ghost" size="icon">
                     <Download className="h-4 w-4" />
                   </Button>
                 </a>
                 <MarkAsPaidButton id={invoice.id} currentStatus={invoice.status} />
+                <DeleteInvoiceButton id={invoice.id} number={invoice.invoiceNumber} />
               </div>
             </TableCell>
           </TableRow>

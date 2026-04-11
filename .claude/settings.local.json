@@ -130,7 +130,11 @@
       "Bash(curl -s --max-time 5 -o /dev/null -w \"%{http_code}\" http://localhost:8010/login)",
       "Bash(powershell -Command \"Stop-Process -Id \\(Get-NetTCPConnection -LocalPort 8010 -ErrorAction SilentlyContinue\\).OwningProcess -Force\")",
       "Bash(powershell -Command \"Stop-Process -Id \\(Get-NetTCPConnection -LocalPort 8010 -ErrorAction SilentlyContinue\\).OwningProcess -Force -ErrorAction SilentlyContinue\")",
-      "Bash(NEXT_TELEMETRY_DISABLED=1 npx next build)"
+      "Bash(NEXT_TELEMETRY_DISABLED=1 npx next build)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node -e \"const p = require\\('puppeteer'\\); console.log\\('puppeteer version:', require\\('./node_modules/puppeteer/package.json'\\).version\\)\")",
+      "Bash(npx puppeteer:*)"
     ]
   }
 }

@@ -1,6 +1,8 @@
 // This file contains the HTML template for PDF generation via puppeteer.
 // It exports a function that generates an HTML string with inline styles.
 
+import { TemplateSettings, CLASSIC_DEFAULTS, LOGO_HEIGHT, LOGO_WIDTH } from "@/lib/template-settings";
+
 export interface InvoiceData {
   invoiceNumber: string;
   issueDate: string;
@@ -8,7 +10,6 @@ export interface InvoiceData {
   serviceDate?: string | null;
   customNote?: string | null;
   paymentDays?: number | null;
-  accentColor?: string | null;
   customer: {
     companyName: string;
     contactPerson?: string | null;
@@ -74,9 +75,27 @@ function getContrastColor(hex: string): string {
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
 
-export function generateInvoiceHtml(data: InvoiceData, accentColor?: string): string {
-  const color = accentColor || data.accentColor || "#1f2937";
-  const textOnAccent = getContrastColor(color);
+export function generateInvoiceHtml(data: InvoiceData, settings?: TemplateSettings): string {
+  const s = settings ?? CLASSIC_DEFAULTS;
+  const color = s.primaryColor;
+  const bodyTextColor = s.textColor ?? "#1f2937";
+  const textOnAccent = s.accentTextColor ?? getContrastColor(color);
+  const logoH = LOGO_HEIGHT[s.logoSize];
+  const logoW = LOGO_WIDTH[s.logoSize];
+  const font = s.fontFamily;
+
+  // spacing-based values
+  const pagePad =
+    s.spacing === "compact"
+      ? "12mm 18mm 0 18mm"
+      : s.spacing === "spacious"
+      ? "18mm 22mm 0 22mm"
+      : "15mm 20mm 0 20mm";
+  const sectionGap =
+    s.spacing === "compact" ? "6mm" : s.spacing === "spacious" ? "12mm" : "10mm";
+  const cellPad =
+    s.spacing === "compact" ? "4px 8px" : s.spacing === "spacious" ? "8px 12px" : "5px 10px";
+
   const senderLine = [
     data.company.companyName,
     data.company.street,
@@ -95,22 +114,27 @@ export function generateInvoiceHtml(data: InvoiceData, accentColor?: string): st
     .join("<br>");
 
   const logoImg = data.company.logoBase64
-    ? `<div class="logo-box"><img src="data:${data.company.logoMimeType ?? "image/png"};base64,${data.company.logoBase64}" alt="Logo" style="max-height:60px; max-width:180px; object-fit:contain;" /></div>`
+    ? `<div class="logo-box"><img src="data:${data.company.logoMimeType ?? "image/png"};base64,${data.company.logoBase64}" alt="Logo" style="max-height:${logoH}px; max-width:${logoW}px; object-fit:contain;" /></div>`
     : "";
 
   const itemRows = data.items
-    .map((item) => {
+    .map((item, idx) => {
       const gross = item.lineTotalNet * (1 + item.vatRate / 100);
+      const isEven = idx % 2 === 1;
+      const rowBg =
+        s.tableStyle === "striped" && isEven ? "background:#f9fafb;" : "";
+      const borderBottom =
+        s.tableStyle === "minimal" ? "border-bottom:1px solid #f3f4f6;" : "border-bottom:1px solid #e5e7eb;";
       return `
-      <tr>
-        <td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; vertical-align:top;">
+      <tr style="${rowBg}">
+        <td style="${cellPad ? `padding:${cellPad};` : ""}${borderBottom} vertical-align:top;">
           <div style="font-weight:500; font-size:11px;">${item.title}</div>
           ${item.description ? `<div style="font-size:10px; color:#6b7280; margin-top:1px;">${item.description}</div>` : ""}
         </td>
-        <td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-size:11px;">${formatQty(item.quantity)} ${item.unit}</td>
-        <td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-size:11px;">${formatEuro(item.unitPrice)}</td>
-        <td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-size:11px;">${item.vatRate.toFixed(0)} %</td>
-        <td style="padding:5px 10px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:500; font-size:11px;">${formatEuro(gross)}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px;">${formatQty(item.quantity)} ${item.unit}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px;">${formatEuro(item.unitPrice)}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px;">${item.vatRate.toFixed(0)} %</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-weight:500; font-size:11px;">${formatEuro(gross)}</td>
       </tr>
     `;
     })
@@ -138,9 +162,9 @@ export function generateInvoiceHtml(data: InvoiceData, accentColor?: string): st
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: '${font}', Helvetica, Arial, sans-serif;
       font-size: 12px;
-      color: #1f2937;
+      color: ${bodyTextColor};
       background: white;
     }
     .page {
@@ -148,7 +172,7 @@ export function generateInvoiceHtml(data: InvoiceData, accentColor?: string): st
       height: 297mm;
       max-height: 297mm;
       overflow: hidden;
-      padding: 15mm 20mm 0 20mm;
+      padding: ${pagePad};
       position: relative;
       box-sizing: border-box;
     }
@@ -159,7 +183,7 @@ export function generateInvoiceHtml(data: InvoiceData, accentColor?: string): st
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 10mm;
+      margin-bottom: ${sectionGap};
     }
     .header-title {
       font-size: 26px;
@@ -286,12 +310,16 @@ export function generateInvoiceHtml(data: InvoiceData, accentColor?: string): st
     <hr class="separator">
 
     <!-- Payment text -->
-    ${data.dueDate ? `
+    ${
+      data.dueDate
+        ? `
     <div class="payment-text">
       Bitte überweisen Sie den Rechnungsbetrag innerhalb von ${paymentDays} Tagen auf unser unten genanntes Konto.
       Für weitere Fragen stehen wir Ihnen sehr gerne zur Verfügung.
     </div>
-    ` : ""}
+    `
+        : ""
+    }
 
     <!-- Custom note -->
     ${data.customNote ? `<div class="custom-note">${data.customNote}</div>` : ""}

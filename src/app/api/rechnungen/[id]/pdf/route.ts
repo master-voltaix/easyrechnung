@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateInvoiceHtml, type InvoiceData } from "@/components/invoice-pdf-template";
+import { generateModernInvoiceHtml } from "@/components/invoice-pdf-template-modern";
+import { getUserTemplateSettings } from "@/lib/actions/templates";
 import { readFile } from "fs/promises";
 import path from "path";
 
@@ -40,6 +42,10 @@ export async function GET(
       where: { userId: session.user.id },
     });
 
+    // Get template settings
+    const templateKey = invoice.templateKey ?? "classic";
+    const settings = await getUserTemplateSettings(session.user.id, templateKey);
+
     // Calculate vat groups
     const vatGroupMap = new Map<number, number>();
     for (const item of invoice.items) {
@@ -59,7 +65,12 @@ export async function GET(
         const logoBuffer = await readFile(logoPath);
         logoBase64 = logoBuffer.toString("base64");
         const ext = company.logoUrl.split(".").pop()?.toLowerCase();
-        logoMimeType = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "image/png";
+        logoMimeType =
+          ext === "png"
+            ? "image/png"
+            : ext === "jpg" || ext === "jpeg"
+            ? "image/jpeg"
+            : "image/png";
       } catch {
         // Logo not found, skip
       }
@@ -80,7 +91,6 @@ export async function GET(
       serviceDate: invoice.serviceDate ? formatDate(invoice.serviceDate) : null,
       customNote: invoice.customNote,
       paymentDays,
-      accentColor: company?.accentColor ?? "#1f2937",
       customer: {
         companyName: invoice.customer.companyName,
         contactPerson: invoice.customer.contactPerson,
@@ -122,7 +132,10 @@ export async function GET(
       vatGroups,
     };
 
-    const html = generateInvoiceHtml(invoiceData);
+    const html =
+      templateKey === "modern"
+        ? generateModernInvoiceHtml(invoiceData, settings)
+        : generateInvoiceHtml(invoiceData, settings);
 
     // Use puppeteer to generate PDF
     const puppeteer = await import("puppeteer");

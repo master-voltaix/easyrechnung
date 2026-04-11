@@ -273,10 +273,9 @@ export async function getStatusDistributionByDateRange(
   const total = invoices.length;
   if (total === 0) {
     return [
-      { name: "Entwurf", value: 0, percentage: 0 },
-      { name: "Versendet", value: 0, percentage: 0 },
-      { name: "Bezahlt", value: 0, percentage: 0 },
-      { name: "Storniert", value: 0, percentage: 0 },
+      { name: "DRAFT", value: 0, percentage: 0 },
+      { name: "PAID", value: 0, percentage: 0 },
+      { name: "CANCELLED", value: 0, percentage: 0 },
     ];
   }
 
@@ -285,17 +284,12 @@ export async function getStatusDistributionByDateRange(
     statusMap.set(inv.status, (statusMap.get(inv.status) || 0) + 1);
   });
 
-  const statusNames: { [key: string]: string } = {
-    DRAFT: "Entwurf",
-    SENT: "Versendet",
-    PAID: "Bezahlt",
-    CANCELLED: "Storniert",
-  };
+  const statusKeys = ["DRAFT", "PAID", "CANCELLED"];
 
-  return Object.entries(statusNames).map(([key, name]) => {
+  return statusKeys.map((key) => {
     const value = statusMap.get(key) || 0;
     return {
-      name,
+      name: key, // return status code; client translates
       value,
       percentage: Math.round((value / total) * 100),
     };
@@ -352,7 +346,7 @@ export async function getInvoiceMetricsByDateRange(
   return {
     totalRevenue,
     totalOutstanding: invoices
-      .filter((inv) => inv.status === "SENT")
+      .filter((inv) => inv.status === "DRAFT")
       .reduce((sum, inv) => sum + Number(inv.totalGross), 0),
     totalPaid: invoices.filter((inv) => inv.status === "PAID").length,
     draftCount: invoices.filter((inv) => inv.status === "DRAFT").length,

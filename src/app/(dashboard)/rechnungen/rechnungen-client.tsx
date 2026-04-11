@@ -5,12 +5,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Copy, Plus, RefreshCw } from "lucide-react";
+import { Download, Copy, Plus, RefreshCw, Eye } from "lucide-react";
 import { formatEuro, formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { DeleteInvoiceButton } from "./delete-button";
-import { InvoiceStatusButton } from "./status-button";
-import { InvoicePdfPreviewButton } from "@/components/invoice-pdf-preview-button";
+import { MarkAsPaidButton } from "./status-button";
 import { RecurringPdfDialog } from "@/components/recurring-pdf-dialog";
 
 interface Invoice {
@@ -29,7 +28,7 @@ interface Props {
 }
 
 export function RechnungenClient({ invoices }: Props) {
-  const [recurringDialog, setRecurringDialog] = useState<{ id: string; number: string; type: "DAILY" | "WEEKLY" | "MONTHLY" } | null>(null);
+  const [recurringDialog, setRecurringDialog] = useState<{ id: string; number: string; type: "DAILY" | "WEEKLY" | "MONTHLY"; issueDate: Date } | null>(null);
 
   return (
     <>
@@ -69,15 +68,22 @@ export function RechnungenClient({ invoices }: Props) {
                   <TableCell><StatusBadge status={invoice.status} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <InvoicePdfPreviewButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} iconOnly />
+                      {/* Eye: view */}
+                      <Link href={`/rechnungen/${invoice.id}`} title="Anzeigen">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
+
+                      {/* Download PDF */}
                       {invoice.recurringType !== "NONE" ? (
                         <Button
                           variant="ghost"
                           size="icon"
                           title="Wiederkehrende PDF herunterladen"
-                          onClick={() => setRecurringDialog({ id: invoice.id, number: invoice.invoiceNumber, type: invoice.recurringType as "DAILY" | "WEEKLY" | "MONTHLY" })}
+                          onClick={() => setRecurringDialog({ id: invoice.id, number: invoice.invoiceNumber, type: invoice.recurringType as "DAILY" | "WEEKLY" | "MONTHLY", issueDate: invoice.issueDate })}
                         >
-                          <RefreshCw className="h-4 w-4 text-blue-600" />
+                          <RefreshCw className="h-4 w-4" />
                         </Button>
                       ) : (
                         <a href={`/api/rechnungen/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer" title="PDF herunterladen">
@@ -86,15 +92,23 @@ export function RechnungenClient({ invoices }: Props) {
                           </Button>
                         </a>
                       )}
+
+                      {/* XML download */}
                       <a href={`/api/rechnungen/${invoice.id}/xrechnung`} target="_blank" rel="noopener noreferrer" title="XRechnung herunterladen">
-                        <Button variant="ghost" size="sm" className="text-xs">XML</Button>
+                        <Button variant="ghost" size="sm" className="text-xs font-mono">XML</Button>
                       </a>
+
+                      {/* Copy */}
                       <Link href={`/rechnungen/neu?copy=${invoice.id}`} title="Kopieren">
                         <Button variant="ghost" size="icon">
                           <Copy className="h-4 w-4" />
                         </Button>
                       </Link>
-                      <InvoiceStatusButton id={invoice.id} currentStatus={invoice.status as "DRAFT" | "SENT" | "PAID" | "CANCELLED"} />
+
+                      {/* Mark as paid */}
+                      <MarkAsPaidButton id={invoice.id} currentStatus={invoice.status} />
+
+                      {/* Delete */}
                       <DeleteInvoiceButton id={invoice.id} number={invoice.invoiceNumber} />
                     </div>
                   </TableCell>
@@ -113,6 +127,7 @@ export function RechnungenClient({ invoices }: Props) {
         invoiceId={recurringDialog.id}
         invoiceNumber={recurringDialog.number}
         recurringType={recurringDialog.type}
+        issueDate={recurringDialog.issueDate}
       />
     )}
   </>

@@ -9,9 +9,10 @@ interface Props {
   invoiceId: string;
   invoiceNumber: string;
   recurringType: "DAILY" | "WEEKLY" | "MONTHLY";
+  issueDate?: Date | string | null;
 }
 
-export function RecurringPdfButton({ invoiceId, invoiceNumber, recurringType }: Props) {
+export function RecurringPdfButton({ invoiceId, invoiceNumber, recurringType, issueDate }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -26,6 +27,7 @@ export function RecurringPdfButton({ invoiceId, invoiceNumber, recurringType }: 
         invoiceId={invoiceId}
         invoiceNumber={invoiceNumber}
         recurringType={recurringType}
+        issueDate={issueDate}
       />
     </>
   );

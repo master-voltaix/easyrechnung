@@ -9,10 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil } from "lucide-react";
 import { formatEuro } from "@/lib/utils";
 import { DeleteProductButton } from "./delete-button";
+import { getServerLanguage } from "@/lib/get-server-language";
 
 export default async function ProduktePage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
+  const { t } = getServerLanguage();
 
   const products = await prisma.product.findMany({
     where: { userId: session.user.id },
@@ -23,13 +25,13 @@ export default async function ProduktePage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Produkte & Leistungen</h1>
-          <p className="text-gray-600 mt-1">{products.length} Einträge gesamt</p>
+          <h1 className="text-2xl font-bold text-foreground">{t.products.title}</h1>
+          <p className="text-muted-foreground mt-1">{products.length} {t.products.total}</p>
         </div>
         <Link href="/produkte/neu">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Neues Produkt
+            {t.products.new}
           </Button>
         </Link>
       </div>
@@ -37,12 +39,12 @@ export default async function ProduktePage() {
       <Card>
         <CardContent className="p-0">
           {products.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <p className="mb-4">Noch keine Produkte oder Leistungen angelegt.</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="mb-4">{t.products.noProducts}</p>
               <Link href="/produkte/neu">
                 <Button variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
-                  Erstes Produkt anlegen
+                  {t.products.createFirst}
                 </Button>
               </Link>
             </div>
@@ -50,11 +52,11 @@ export default async function ProduktePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Bezeichnung</TableHead>
-                  <TableHead>Einheit</TableHead>
-                  <TableHead>Preis (netto)</TableHead>
-                  <TableHead>MwSt.</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  <TableHead>{t.products.name}</TableHead>
+                  <TableHead>{t.products.unit}</TableHead>
+                  <TableHead>{t.products.price}</TableHead>
+                  <TableHead>{t.products.vatRate}</TableHead>
+                  <TableHead className="text-right">{t.products.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
