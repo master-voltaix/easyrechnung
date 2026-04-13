@@ -9,11 +9,17 @@ export async function GET() {
     return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
   }
 
-  // Return default/first profile for backward compat
-  const profile = await prisma.companyProfile.findFirst({
+  const profiles = await prisma.companyProfile.findMany({
     where: { userId: session.user.id },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      profileName: true,
+      isDefault: true,
+      companyName: true,
+      logoUrl: true,
+    },
   });
 
-  return NextResponse.json({ profile });
+  return NextResponse.json({ profiles });
 }

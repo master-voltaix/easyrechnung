@@ -13,7 +13,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { createInvoice } from "@/lib/actions/invoices";
 import { createCustomer } from "@/lib/actions/customers";
 import { formatEuro } from "@/lib/utils";
-import { ArrowLeft, Plus, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserPlus, X, Building2 } from "lucide-react";
+
+interface CompanyProfile {
+  id: string;
+  profileName: string;
+  isDefault: boolean;
+  companyName: string;
+  logoUrl?: string | null;
+}
 
 interface Customer {
   id: string;
@@ -62,6 +70,8 @@ export default function NeueRechnungPage() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [companyProfiles, setCompanyProfiles] = useState<CompanyProfile[]>([]);
+  const [companyProfileId, setCompanyProfileId] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   // Customer selection
@@ -89,6 +99,12 @@ export default function NeueRechnungPage() {
   useEffect(() => {
     fetch("/api/kunden/list").then(r => r.json()).then(d => setCustomers(d.customers ?? []));
     fetch("/api/produkte/list").then(r => r.json()).then(d => setProducts(d.products ?? []));
+    fetch("/api/company/profiles").then(r => r.json()).then(d => {
+      const profiles: CompanyProfile[] = d.profiles ?? [];
+      setCompanyProfiles(profiles);
+      const def = profiles.find(p => p.isDefault) ?? profiles[0];
+      if (def) setCompanyProfileId(def.id);
+    });
 
     if (copyId) {
       fetch(`/api/rechnungen/${copyId}`).then(r => r.json()).then(d => {
@@ -198,6 +214,7 @@ export default function NeueRechnungPage() {
     try {
       const result = await createInvoice({
         customerId,
+        companyProfileId: companyProfileId || undefined,
         issueDate: new Date(issueDate),
         dueDate: dueDate ? new Date(dueDate) : undefined,
         serviceDate: serviceDate ? new Date(serviceDate) : undefined,
@@ -241,6 +258,43 @@ export default function NeueRechnungPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Company Profile Selector */}
+        {companyProfiles.length > 1 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                Firmenprofil
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {companyProfiles.map((profile) => (
+                  <button
+                    key={profile.id}
+                    type="button"
+                    onClick={() => setCompanyProfileId(profile.id)}
+                    className={`flex items-center gap-2 px-3 py-2 text-sm border transition-colors ${
+                      companyProfileId === profile.id
+                        ? "border-[#52B876] bg-[#52B876]/10 text-foreground font-medium"
+                        : "border-input bg-background hover:bg-secondary text-foreground"
+                    }`}
+                    style={{ borderRadius: "2px" }}
+                  >
+                    {profile.logoUrl && (
+                      <img src={profile.logoUrl} alt="" className="h-5 w-8 object-contain" />
+                    )}
+                    <div className="text-left">
+                      <div className="font-medium">{profile.profileName}</div>
+                      <div className="text-xs text-muted-foreground">{profile.companyName}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Basic Info */}
         <Card>
           <CardHeader>

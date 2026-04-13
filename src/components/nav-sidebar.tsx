@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { SettingsDialog } from "@/components/settings-dialog";
 import { useLanguage } from "@/components/language-provider";
 
 export function NavSidebar() {
@@ -113,9 +112,8 @@ export function NavSidebar() {
         <NavLinks />
       </nav>
 
-      {/* Settings + Logout */}
+      {/* Logout */}
       <div className="px-2 py-3 border-t border-[#1C1C1C] space-y-0.5">
-        <SettingsDialog />
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-[#555] hover:text-white hover:bg-white/5 w-full transition-colors duration-150"

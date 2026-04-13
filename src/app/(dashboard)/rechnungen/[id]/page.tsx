@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatEuro, formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
-import { ArrowLeft, Download, Pencil } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Eye, FileCode, Copy, CheckCircle } from "lucide-react";
 import { InvoiceStatusActions } from "./status-actions";
 import { InvoicePdfPreviewButton } from "@/components/invoice-pdf-preview-button";
 import { RecurringPdfButton } from "./recurring-pdf-button";
@@ -44,7 +44,10 @@ export default async function RechnungDetailPage({ params }: { params: { id: str
           <h1 className="text-2xl font-bold text-gray-900">{invoice.invoiceNumber}</h1>
         </div>
         <div className="flex items-center gap-2">
+          {/* Preview PDF - blue/neutral */}
           <InvoicePdfPreviewButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} variant="outline" />
+
+          {/* Download PDF - blue */}
           {invoice.recurringType !== "NONE" ? (
             <RecurringPdfButton
               invoiceId={invoice.id}
@@ -54,31 +57,41 @@ export default async function RechnungDetailPage({ params }: { params: { id: str
             />
           ) : (
             <a href={`/api/rechnungen/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline">
+              <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300">
                 <Download className="h-4 w-4 mr-2" />
-                PDF herunterladen
+                PDF
               </Button>
             </a>
           )}
+
+          {/* XRechnung - indigo */}
           <a href={`/api/rechnungen/${invoice.id}/xrechnung`} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              XRechnung herunterladen
+            <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300">
+              <FileCode className="h-4 w-4 mr-2" />
+              XRechnung
             </Button>
           </a>
-          {invoice.status !== "PAID" ? (
-            <Link href={`/rechnungen/${invoice.id}/bearbeiten`}>
-              <Button variant="outline">
-                <Pencil className="h-4 w-4 mr-2" />
-                Bearbeiten
-              </Button>
-            </Link>
-          ) : (
-            <Button variant="outline" disabled title="Bezahlte Rechnungen können nicht bearbeitet werden">
+
+          {/* Copy invoice */}
+          <Link href={`/rechnungen/neu?copy=${invoice.id}`}>
+            <Button variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-50">
+              <Copy className="h-4 w-4 mr-2" />
+              Kopieren
+            </Button>
+          </Link>
+
+          {/* Edit - amber, always visible */}
+          <Link href={`/rechnungen/${invoice.id}/bearbeiten`}>
+            <Button
+              variant="outline"
+              disabled={invoice.status === "PAID"}
+              title={invoice.status === "PAID" ? "Bezahlte Rechnungen können nicht bearbeitet werden" : "Bearbeiten"}
+              className={invoice.status !== "PAID" ? "border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300" : ""}
+            >
               <Pencil className="h-4 w-4 mr-2" />
               Bearbeiten
             </Button>
-          )}
+          </Link>
         </div>
       </div>
 

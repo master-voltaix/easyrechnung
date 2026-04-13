@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Copy, Plus, RefreshCw, Eye } from "lucide-react";
+import { Download, Copy, Plus, RefreshCw, Eye, Pencil } from "lucide-react";
 import { formatEuro, formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import { DeleteInvoiceButton } from "./delete-button";
@@ -70,8 +70,21 @@ export function RechnungenClient({ invoices }: Props) {
                     <div className="flex items-center justify-end gap-1">
                       {/* Eye: view */}
                       <Link href={`/rechnungen/${invoice.id}`} title="Anzeigen">
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-600 hover:bg-blue-50">
                           <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
+
+                      {/* Edit */}
+                      <Link href={`/rechnungen/${invoice.id}/bearbeiten`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Bearbeiten"
+                          disabled={invoice.status === "PAID"}
+                          className={invoice.status !== "PAID" ? "text-amber-500 hover:text-amber-600 hover:bg-amber-50" : ""}
+                        >
+                          <Pencil className="h-4 w-4" />
                         </Button>
                       </Link>
 

@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-type InvoiceStatus = "DRAFT" | "PAID" | "CANCELLED";
+type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "CANCELLED";
 
 interface InvoiceItemInput {
   productId?: string;
@@ -22,6 +22,7 @@ type RecurringType = "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
 
 interface CreateInvoiceInput {
   customerId: string;
+  companyProfileId?: string;
   issueDate: Date;
   dueDate?: Date;
   serviceDate?: Date;
@@ -29,6 +30,8 @@ interface CreateInvoiceInput {
   internalNote?: string;
   recurringType?: RecurringType;
   templateKey?: string;
+  discountType?: "PERCENTAGE" | "FIXED" | null;
+  discountValue?: number | null;
   items: InvoiceItemInput[];
 }
 
@@ -37,7 +40,11 @@ interface UpdateInvoiceInput extends CreateInvoiceInput {
   templateKey?: string;
 }
 
-function calculateTotals(items: InvoiceItemInput[]) {
+function calculateTotals(
+  items: InvoiceItemInput[],
+  discountType?: "PERCENTAGE" | "FIXED" | null,
+  discountValue?: number | null,
+) {
   let subtotalNet = 0;
   let totalVat = 0;
 
@@ -54,8 +61,23 @@ function calculateTotals(items: InvoiceItemInput[]) {
     };
   });
 
-  const totalGross = subtotalNet + totalVat;
-  return { calculatedItems, subtotalNet, totalVat, totalGross };
+  // Calculate discount amount
+  let discountAmount = 0;
+  if (discountType && discountValue && discountValue > 0) {
+    if (discountType === "PERCENTAGE") {
+      discountAmount = subtotalNet * (discountValue / 100);
+    } else if (discountType === "FIXED") {
+      discountAmount = Math.min(discountValue, subtotalNet);
+    }
+  }
+
+  // Apply discount proportionally to VAT
+  const discountFactor = subtotalNet > 0 ? (subtotalNet - discountAmount) / subtotalNet : 1;
+  const adjustedTotalVat = totalVat * discountFactor;
+  const discountedNet = subtotalNet - discountAmount;
+  const totalGross = discountedNet + adjustedTotalVat;
+
+  return { calculatedItems, subtotalNet, totalVat: adjustedTotalVat, totalGross, discountAmount };
 }
 
 async function generateInvoiceNumber(userId: string): Promise<string> {
@@ -87,12 +109,13 @@ export async function createInvoice(input: CreateInvoiceInput) {
 
     const invoiceNumber = await generateInvoiceNumber(session.user.id);
     const { calculatedItems, subtotalNet, totalVat, totalGross } =
-      calculateTotals(input.items);
+      calculateTotals(input.items, input.discountType, input.discountValue);
 
     const invoice = await prisma.invoice.create({
       data: {
         userId: session.user.id,
         customerId: input.customerId,
+        companyProfileId: input.companyProfileId ?? null,
         invoiceNumber,
         issueDate: input.issueDate,
         dueDate: input.dueDate,
@@ -100,6 +123,8 @@ export async function createInvoice(input: CreateInvoiceInput) {
         subtotalNet,
         totalVat,
         totalGross,
+        discountType: input.discountType ?? null,
+        discountValue: input.discountValue ?? null,
         customNote: input.customNote,
         internalNote: input.internalNote,
         recurringType: input.recurringType ?? "NONE",
@@ -152,7 +177,7 @@ export async function updateInvoice(id: string, input: UpdateInvoiceInput) {
     }
 
     const { calculatedItems, subtotalNet, totalVat, totalGross } =
-      calculateTotals(input.items);
+      calculateTotals(input.items, input.discountType, input.discountValue);
 
     // Delete old items and recreate
     await prisma.invoiceItem.deleteMany({ where: { invoiceId: id } });
@@ -167,6 +192,8 @@ export async function updateInvoice(id: string, input: UpdateInvoiceInput) {
         subtotalNet,
         totalVat,
         totalGross,
+        discountType: input.discountType ?? null,
+        discountValue: input.discountValue ?? null,
         customNote: input.customNote,
         internalNote: input.internalNote,
         recurringType: input.recurringType ?? existing.recurringType,

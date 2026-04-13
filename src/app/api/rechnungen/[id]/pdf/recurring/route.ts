@@ -57,9 +57,12 @@ export async function GET(
       return new NextResponse("Diese Rechnung ist nicht wiederkehrend", { status: 400 });
     }
 
-    const company = await prisma.companyProfile.findUnique({
-      where: { userId: session.user.id },
-    });
+    const company = invoice.companyProfileId
+      ? await prisma.companyProfile.findUnique({ where: { id: invoice.companyProfileId } })
+      : await prisma.companyProfile.findFirst({
+          where: { userId: session.user.id },
+          orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+        });
 
     // Get template settings
     const templateKey = invoice.templateKey ?? "classic";

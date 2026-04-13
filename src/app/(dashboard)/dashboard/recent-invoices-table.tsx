@@ -63,13 +63,17 @@ export function RecentInvoicesTable({ invoices }: { invoices: Invoice[] }) {
             <TableCell className="text-right">
               <div className="flex items-center justify-end gap-1">
                 <InvoicePdfPreviewButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} iconOnly />
-                {invoice.status !== "PAID" && (
-                  <Link href={`/rechnungen/${invoice.id}/bearbeiten`}>
-                    <Button variant="ghost" size="icon" title={t.invoices.edit}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                )}
+                <Link href={`/rechnungen/${invoice.id}/bearbeiten`}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title={t.invoices.edit}
+                    disabled={invoice.status === "PAID"}
+                    className={invoice.status !== "PAID" ? "text-amber-500 hover:text-amber-600 hover:bg-amber-50" : ""}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </Link>
                 <a href={`/api/rechnungen/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer" title={t.invoices.downloadPdf}>
                   <Button variant="ghost" size="icon">
                     <Download className="h-4 w-4" />

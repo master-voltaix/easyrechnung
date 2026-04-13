@@ -38,9 +38,13 @@ export async function GET(
       return new NextResponse("Nicht gefunden", { status: 404 });
     }
 
-    const company = await prisma.companyProfile.findUnique({
-      where: { userId: session.user.id },
-    });
+    // Use invoice's linked company profile, or fall back to default/first
+    const company = invoice.companyProfileId
+      ? await prisma.companyProfile.findUnique({ where: { id: invoice.companyProfileId } })
+      : await prisma.companyProfile.findFirst({
+          where: { userId: session.user.id },
+          orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+        });
 
     // Get template settings
     const templateKey = invoice.templateKey ?? "classic";

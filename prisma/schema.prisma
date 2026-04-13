@@ -19,7 +19,7 @@ model User {
   passwordHash     String
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  company          CompanyProfile?
+  companies        CompanyProfile[]
   customers        Customer[]
   products         Product[]
   invoices         Invoice[]
@@ -28,7 +28,9 @@ model User {
 }
 
 model CompanyProfile {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
+  profileName        String    @default("Hauptfirma")
+  isDefault          Boolean   @default(false)
   companyName        String
   ownerName          String?
   street             String?
@@ -45,11 +47,12 @@ model CompanyProfile {
   accountHolder      String?
   defaultInvoiceNote String?
   logoUrl            String?
-  accentColor        String   @default("#1f2937")
-  userId             String   @unique
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  accentColor        String    @default("#1f2937")
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices           Invoice[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model Customer {
@@ -87,29 +90,31 @@ model Product {
 }
 
 model Invoice {
-  id            String        @id @default(cuid())
-  userId        String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customerId    String
-  customer      Customer      @relation(fields: [customerId], references: [id])
-  invoiceNumber String
-  issueDate     DateTime
-  dueDate       DateTime?
-  serviceDate   DateTime?
-  paidDate      DateTime?
-  status        String        @default("DRAFT")
-  subtotalNet   Decimal
-  totalVat      Decimal
-  totalGross    Decimal
-  discountType   String?
-  discountValue  Decimal?
-  customNote     String?
-  internalNote   String?
-  recurringType  String        @default("NONE")
-  templateKey    String        @default("classic")
-  items          InvoiceItem[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId       String
+  customer         Customer        @relation(fields: [customerId], references: [id])
+  companyProfileId String?
+  companyProfile   CompanyProfile? @relation(fields: [companyProfileId], references: [id])
+  invoiceNumber    String
+  issueDate        DateTime
+  dueDate          DateTime?
+  serviceDate      DateTime?
+  paidDate         DateTime?
+  status           String          @default("DRAFT")
+  subtotalNet      Decimal
+  totalVat         Decimal
+  totalGross       Decimal
+  discountType     String?
+  discountValue    Decimal?
+  customNote       String?
+  internalNote     String?
+  recurringType    String          @default("NONE")
+  templateKey      String          @default("classic")
+  items            InvoiceItem[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@unique([userId, invoiceNumber])
 }

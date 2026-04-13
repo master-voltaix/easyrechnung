@@ -28,9 +28,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Load company profile for real data
-  const company = await prisma.companyProfile.findUnique({
+  // Load company profile for real data (default/first profile)
+  const company = await prisma.companyProfile.findFirst({
     where: { userId: session.user.id },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
 
   // Load logo as base64

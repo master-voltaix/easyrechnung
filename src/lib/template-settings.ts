@@ -1,4 +1,4 @@
-export type FontFamily = "Helvetica Neue" | "Georgia" | "Arial";
+export type FontFamily = "Helvetica Neue" | "Georgia" | "Arial" | "Times New Roman" | "Courier New" | "Trebuchet MS";
 export type LogoSize = "small" | "medium" | "large";
 export type Spacing = "compact" | "normal" | "spacious";
 export type TableStyle = "default" | "striped" | "minimal";

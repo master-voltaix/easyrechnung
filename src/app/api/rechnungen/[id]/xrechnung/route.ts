@@ -24,9 +24,6 @@ export async function GET(
       include: {
         customer: true,
         items: true,
-        user: {
-          include: { company: true },
-        },
       },
     });
 
@@ -40,7 +37,14 @@ export async function GET(
       return new NextResponse("Forbidden", { status: 403 });
     }
 
-    const company = invoice.user.company;
+    // Use invoice's linked company profile, or fall back to default/first
+    const company = invoice.companyProfileId
+      ? await prisma.companyProfile.findUnique({ where: { id: invoice.companyProfileId } })
+      : await prisma.companyProfile.findFirst({
+          where: { userId: session.user.id },
+          orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+        });
+
     console.log("[XRechnung] Company profile found:", company ? "yes" : "no");
     if (!company) {
       return new NextResponse("Company profile not configured", { status: 400 });
