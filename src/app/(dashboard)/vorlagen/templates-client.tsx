@@ -9,12 +9,19 @@ import {
   TemplateSettings,
   CLASSIC_DEFAULTS,
   FontFamily,
+  FontSize,
   LogoSize,
   Spacing,
   TableStyle,
 } from "@/lib/template-settings";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, RotateCcw, Save, AlertTriangle } from "lucide-react";
+import {
+  Loader2, RotateCcw, Save, AlertTriangle,
+  Minimize2, Square, Maximize2,
+  Table, AlignJustify, List,
+  Minus, Equal, Plus,
+  ChevronsUpDown, ArrowUpDown, Expand,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +33,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 interface TemplatesClientProps {
-  initialSettings: TemplateSettings;
+  initialClassic: TemplateSettings;
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
+function isHex(v: string) {
+  return /^#[0-9A-Fa-f]{6}$/.test(v);
 }
 
 function encodeSettings(s: TemplateSettings): string {
@@ -38,41 +53,38 @@ function encodeSettings(s: TemplateSettings): string {
   }
 }
 
-function NumberBadge({ n }: { n: number }) {
-  return (
-    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#52B876] text-white text-[10px] font-bold shrink-0">
-      {n}
-    </span>
-  );
-}
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function ColorPicker({
   label,
+  description,
   value,
   onChange,
-  number,
 }: {
   label: string;
+  description?: string;
   value: string;
   onChange: (v: string) => void;
-  number?: number;
 }) {
-  const isValid = /^#[0-9A-Fa-f]{6}$/.test(value);
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-        {number !== undefined && <NumberBadge n={number} />}
-        {label}
-      </Label>
-      <div className="flex items-center gap-2">
+    <div className="space-y-2">
+      <div>
+        <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          {label}
+        </Label>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        )}
+      </div>
+      <div className="flex items-center gap-2.5">
         <label className="cursor-pointer shrink-0" title="Farbe wählen">
           <div
-            className="w-8 h-8 rounded border border-border shadow-sm transition-transform hover:scale-110"
-            style={{ backgroundColor: isValid ? value : "#1f2937" }}
+            className="w-10 h-10 rounded border border-border shadow-sm transition-transform hover:scale-110"
+            style={{ backgroundColor: isHex(value) ? value : "#1f2937" }}
           />
           <input
             type="color"
-            value={isValid ? value : "#1f2937"}
+            value={isHex(value) ? value : "#1f2937"}
             onChange={(e) => onChange(e.target.value)}
             className="sr-only"
           />
@@ -81,7 +93,7 @@ function ColorPicker({
           type="text"
           placeholder="#1f2937"
           maxLength={7}
-          className="font-mono h-8 text-sm"
+          className="font-mono h-10 text-sm"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -94,21 +106,19 @@ function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
-  number,
 }: {
-  options: { value: T; label: string; preview?: string }[];
+  options: { value: T; label: string; preview?: string; icon?: React.ReactNode }[];
   value: T;
   onChange: (v: T) => void;
-  number?: number;
 }) {
   return (
-    <div className="flex gap-1 flex-wrap">
+    <div className="flex gap-1.5 flex-wrap">
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
-          className={`px-3 py-1.5 text-xs border transition-colors duration-150 ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border transition-colors duration-150 ${
             value === opt.value
               ? "border-foreground bg-foreground text-background font-medium"
               : "border-input bg-background hover:bg-secondary text-foreground"
@@ -116,20 +126,10 @@ function SegmentedControl<T extends string>({
           style={{ borderRadius: "2px", fontFamily: opt.preview || undefined }}
           title={opt.preview ? `Vorschau: ${opt.label}` : undefined}
         >
+          {opt.icon && <span className="shrink-0 [&>svg]:w-3.5 [&>svg]:h-3.5">{opt.icon}</span>}
           {opt.label}
         </button>
       ))}
-    </div>
-  );
-}
-
-function SectionTitle({ children, number }: { children: React.ReactNode; number?: number }) {
-  return (
-    <div className="flex items-center gap-2 mb-3 mt-5 first:mt-0">
-      {number !== undefined && <NumberBadge n={number} />}
-      <p className="text-[10px] font-mono font-medium tracking-widest text-muted-foreground uppercase">
-        {children}
-      </p>
     </div>
   );
 }
@@ -143,48 +143,83 @@ function UnsavedBadge() {
   );
 }
 
-export function TemplatesClient({ initialSettings }: TemplatesClientProps) {
+function Divider() {
+  return <div className="border-t border-border my-5" />;
+}
+
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-bold text-foreground">{title}</p>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        )}
+      </div>
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export function TemplatesClient({ initialClassic }: TemplatesClientProps) {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<TemplateSettings>(initialSettings);
-  const [savedSettings, setSavedSettings] = useState<TemplateSettings>(initialSettings);
+
+  const [settings, setSettings] = useState<TemplateSettings>(initialClassic);
+  const [savedSettings, setSavedSettings] = useState<TemplateSettings>(initialClassic);
   const [saving, setSaving] = useState(false);
-  const [previewSrc, setPreviewSrc] = useState<string>("");
+  const [previewSrc, setPreviewSrc] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [zoom, setZoom] = useState<0.75 | 1>(0.75);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hasUnsaved = JSON.stringify(settings) !== JSON.stringify(savedSettings);
 
-  // Warn before browser unload
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  const update = <K extends keyof TemplateSettings>(key: K, val: TemplateSettings[K]) =>
+    setSettings((p) => ({ ...p, [key]: val }));
+
+  const buildUrl = useCallback(
+    (s: TemplateSettings) => `/api/templates/preview?key=classic&s=${encodeSettings(s)}`,
+    []
+  );
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+
+  // Debounced preview update
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
+    setPreviewLoading(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setPreviewSrc(buildUrl(settings)), 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [settings, buildUrl]);
+
+  // Warn before unload
+  useEffect(() => {
+    const h = (e: BeforeUnloadEvent) => {
       if (hasUnsaved) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
   }, [hasUnsaved]);
 
-  const update = <K extends keyof TemplateSettings>(key: K, value: TemplateSettings[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const buildPreviewUrl = useCallback((s: TemplateSettings) => {
-    return `/api/templates/preview?key=classic&s=${encodeSettings(s)}`;
-  }, []);
-
-  useEffect(() => {
-    setPreviewLoading(true);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setPreviewSrc(buildPreviewUrl(settings));
-    }, 400);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [settings, buildPreviewUrl]);
+  // ── Save / Reset ──────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     setSaving(true);
@@ -194,44 +229,76 @@ export function TemplatesClient({ initialSettings }: TemplatesClientProps) {
         toast({ title: "Fehler", description: result.error, variant: "destructive" });
       } else {
         setSavedSettings({ ...settings });
-        toast({ title: "Gespeichert", description: "Vorlage wurde erfolgreich gespeichert." });
+        toast({
+          title: "Gespeichert",
+          description: "Vorlage wurde erfolgreich gespeichert.",
+        });
       }
     } finally {
       setSaving(false);
     }
   };
 
+  // Stable ref so the keyboard shortcut always calls the latest handleSave
+  const saveRef = useRef(handleSave);
+  saveRef.current = handleSave;
+
+  // Ctrl / Cmd + S shortcut
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        saveRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const handleReset = () => {
     setSettings({ ...CLASSIC_DEFAULTS });
-    toast({ title: "Zurückgesetzt", description: "Alle Einstellungen wurden zurückgesetzt." });
+    toast({
+      title: "Zurückgesetzt",
+      description: "Einstellungen wurden auf Standard zurückgesetzt.",
+    });
   };
 
+  // ── Option arrays ─────────────────────────────────────────────────────────
+
   const fontOptions: { value: FontFamily; label: string; preview?: string }[] = [
-    { value: "Helvetica Neue", label: "Helvetica", preview: "Helvetica Neue, Helvetica, Arial, sans-serif" },
-    { value: "Georgia", label: "Georgia", preview: "Georgia, serif" },
-    { value: "Arial", label: "Arial", preview: "Arial, sans-serif" },
-    { value: "Times New Roman", label: "Times New Roman", preview: "Times New Roman, Times, serif" },
-    { value: "Courier New", label: "Courier New", preview: "Courier New, Courier, monospace" },
-    { value: "Trebuchet MS", label: "Trebuchet", preview: "Trebuchet MS, sans-serif" },
+    { value: "Helvetica Neue", label: "Helvetica",       preview: "Helvetica Neue, Helvetica, Arial, sans-serif" },
+    { value: "Georgia",        label: "Georgia",         preview: "Georgia, serif" },
+    { value: "Arial",          label: "Arial",           preview: "Arial, sans-serif" },
+    { value: "Times New Roman",label: "Times New Roman", preview: "Times New Roman, Times, serif" },
+    { value: "Courier New",    label: "Courier New",     preview: "Courier New, Courier, monospace" },
+    { value: "Trebuchet MS",   label: "Trebuchet",       preview: "Trebuchet MS, sans-serif" },
   ];
 
-  const logoOptions: { value: LogoSize; label: string }[] = [
-    { value: "small", label: "Klein" },
-    { value: "medium", label: "Mittel" },
-    { value: "large", label: "Groß" },
+  const fontSizeOptions: { value: FontSize; label: string; icon: React.ReactNode }[] = [
+    { value: "small",  label: "Klein",  icon: <Minus /> },
+    { value: "normal", label: "Normal", icon: <Equal /> },
+    { value: "large",  label: "Groß",   icon: <Plus /> },
   ];
 
-  const spacingOptions: { value: Spacing; label: string }[] = [
-    { value: "compact", label: "Kompakt" },
-    { value: "normal", label: "Normal" },
-    { value: "spacious", label: "Geräumig" },
+  const logoOptions: { value: LogoSize; label: string; icon: React.ReactNode }[] = [
+    { value: "small",  label: "Klein",  icon: <Minimize2 /> },
+    { value: "medium", label: "Mittel", icon: <Square /> },
+    { value: "large",  label: "Groß",   icon: <Maximize2 /> },
   ];
 
-  const tableOptions: { value: TableStyle; label: string }[] = [
-    { value: "default", label: "Standard" },
-    { value: "striped", label: "Gestreift" },
-    { value: "minimal", label: "Minimal" },
+  const spacingOptions: { value: Spacing; label: string; icon: React.ReactNode }[] = [
+    { value: "compact",  label: "Kompakt",  icon: <ChevronsUpDown /> },
+    { value: "normal",   label: "Normal",   icon: <ArrowUpDown /> },
+    { value: "spacious", label: "Geräumig", icon: <Expand /> },
   ];
+
+  const tableOptions: { value: TableStyle; label: string; icon: React.ReactNode }[] = [
+    { value: "default", label: "Standard",  icon: <Table /> },
+    { value: "striped", label: "Gestreift", icon: <AlignJustify /> },
+    { value: "minimal", label: "Minimal",   icon: <List /> },
+  ];
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -240,7 +307,8 @@ export function TemplatesClient({ initialSettings }: TemplatesClientProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Ungespeicherte Änderungen</AlertDialogTitle>
             <AlertDialogDescription>
-              Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen alle Änderungen verloren.
+              Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen alle
+              Änderungen verloren.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -255,116 +323,138 @@ export function TemplatesClient({ initialSettings }: TemplatesClientProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-0 items-start min-h-[calc(100vh-120px)]">
-        {/* Left: Editor panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-0 items-start min-h-[calc(100vh-120px)]">
+        {/* ── Left: Editor panel ── */}
         <div className="border-r border-border bg-background flex flex-col h-full">
+
+          {/* Panel header */}
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <p className="text-xs text-muted-foreground">Standardvorlage anpassen</p>
             {hasUnsaved && <UnsavedBadge />}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-0">
-            {/* Colors */}
-            <SectionTitle number={1}>Farben</SectionTitle>
-            <div className="space-y-4">
-              <ColorPicker
-                label="Akzentfarbe (Header, Rahmen)"
-                value={settings.primaryColor}
-                onChange={(v) => update("primaryColor", v)}
-                number={1}
-              />
-              <ColorPicker
-                label="Textfarbe auf Akzent"
-                value={settings.accentTextColor}
-                onChange={(v) => update("accentTextColor", v)}
-                number={2}
-              />
-              <ColorPicker
-                label="Fließtext"
-                value={settings.textColor}
-                onChange={(v) => update("textColor", v)}
-                number={3}
-              />
-            </div>
+          <div className="flex-1 overflow-y-auto divide-y divide-border">
 
-            {/* Typography */}
-            <SectionTitle number={4}>Schriftart</SectionTitle>
-            <div className="space-y-1.5">
-              <SegmentedControl<FontFamily>
-                options={fontOptions}
-                value={settings.fontFamily}
-                onChange={(v) => update("fontFamily", v)}
-                number={4}
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Klicke eine Schrift an – Vorschau wird sofort aktualisiert.
-              </p>
-            </div>
-
-            {/* Logo */}
-            <SectionTitle number={5}>Logo</SectionTitle>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <NumberBadge n={5} />
-                Logogröße
-              </Label>
-              <SegmentedControl<LogoSize>
-                options={logoOptions}
-                value={settings.logoSize}
-                onChange={(v) => update("logoSize", v)}
-              />
-            </div>
-
-            {/* Layout */}
-            <SectionTitle number={6}>Layout</SectionTitle>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                  <NumberBadge n={6} />
-                  Abstände
-                </Label>
-                <SegmentedControl<Spacing>
-                  options={spacingOptions}
-                  value={settings.spacing}
-                  onChange={(v) => update("spacing", v)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                  <NumberBadge n={7} />
-                  Tabellenstil
-                </Label>
-                <SegmentedControl<TableStyle>
-                  options={tableOptions}
-                  value={settings.tableStyle}
-                  onChange={(v) => update("tableStyle", v)}
-                />
+            {/* ── Farbe ── */}
+            <div className="px-5 py-5">
+              <p className="text-sm font-bold text-foreground mb-4">Farbe</p>
+              <div className="flex gap-4">
+                {[
+                  { key: "primaryColor" as const,    label: "Akzentfarbe" },
+                  { key: "accentTextColor" as const, label: "Text auf Akzent" },
+                ].map(({ key, label }) => {
+                  const val = settings[key] as string;
+                  const hex = isHex(val) ? val : "#1f2937";
+                  return (
+                    <div key={key} className="flex items-center gap-2">
+                      <label className="cursor-pointer shrink-0" title={label}>
+                        <div
+                          className="w-8 h-8 rounded border border-border shadow-sm transition-transform hover:scale-110"
+                          style={{ backgroundColor: hex }}
+                        />
+                        <input
+                          type="color"
+                          value={hex}
+                          onChange={(e) => update(key, e.target.value)}
+                          className="sr-only"
+                        />
+                      </label>
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-muted-foreground leading-none">{label}</p>
+                        <Input
+                          type="text"
+                          placeholder="#1f2937"
+                          maxLength={7}
+                          className="font-mono h-6 text-xs px-2 w-24"
+                          value={val}
+                          onChange={(e) => update(key, e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Number Legend */}
-            <div className="mt-6 p-3 bg-muted/40 border border-border rounded-sm space-y-1.5">
-              <p className="text-[10px] font-mono font-medium tracking-widest text-muted-foreground uppercase mb-2">Legende</p>
-              {[
-                [1, "Akzentfarbe → Tabellenheader, Trennlinien"],
-                [2, "Textfarbe auf Akzent → Spaltenüberschriften"],
-                [3, "Fließtext → Adresse, Positionen, Notizen"],
-                [4, "Schriftart → gesamtes Dokument"],
-                [5, "Logo → oben rechts im Header"],
-                [6, "Abstände → Innenabstand aller Bereiche"],
-                [7, "Tabellenstil → Zebra / Minimal / Standard"],
-              ].map(([n, desc]) => (
-                <div key={n} className="flex items-start gap-2 text-[11px] text-muted-foreground">
-                  <NumberBadge n={n as number} />
-                  <span>{desc}</span>
+            {/* ── Schriftart ── */}
+            <div className="px-5 py-5 bg-muted/30">
+              <p className="text-sm font-bold text-foreground mb-4">Schriftart</p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <SegmentedControl<FontFamily>
+                    options={fontOptions}
+                    value={settings.fontFamily}
+                    onChange={(v) => update("fontFamily", v)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Klicke eine Schrift an – Vorschau wird sofort aktualisiert.
+                  </p>
                 </div>
-              ))}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Textgröße
+                  </Label>
+                  <SegmentedControl<FontSize>
+                    options={fontSizeOptions}
+                    value={settings.fontSize}
+                    onChange={(v) => update("fontSize", v)}
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* ── Logo ── */}
+            <div className="px-5 py-5">
+              <p className="text-sm font-bold text-foreground mb-4">Logo</p>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Größe
+                </Label>
+                <SegmentedControl<LogoSize>
+                  options={logoOptions}
+                  value={settings.logoSize}
+                  onChange={(v) => update("logoSize", v)}
+                />
+              </div>
+            </div>
+
+            {/* ── Layout ── */}
+            <div className="px-5 py-5 bg-muted/30">
+              <p className="text-sm font-bold text-foreground mb-4">Layout</p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Tabellenstil
+                  </Label>
+                  <SegmentedControl<TableStyle>
+                    options={tableOptions}
+                    value={settings.tableStyle}
+                    onChange={(v) => update("tableStyle", v)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Abstand
+                  </Label>
+                  <SegmentedControl<Spacing>
+                    options={spacingOptions}
+                    value={settings.spacing}
+                    onChange={(v) => update("spacing", v)}
+                  />
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* Actions */}
           <div className="px-5 py-4 border-t border-border flex items-center gap-2">
-            <Button onClick={handleSave} disabled={saving} className="flex-1 h-9 text-sm">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 h-9 text-sm"
+              title="Speichern (Ctrl+S)"
+            >
               {saving ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
@@ -381,26 +471,46 @@ export function TemplatesClient({ initialSettings }: TemplatesClientProps) {
               variant="outline"
               size="sm"
               onClick={handleReset}
-              className="h-9 px-3"
+              className="h-9 px-3 gap-1.5 text-sm"
               title="Auf Standard zurücksetzen"
             >
               <RotateCcw className="h-3.5 w-3.5" />
+              Zurücksetzen
             </Button>
           </div>
         </div>
 
-        {/* Right: Live preview */}
+        {/* ── Right: Live preview ── */}
         <div className="bg-[#f4f4f4] flex flex-col h-full min-h-[calc(100vh-120px)]">
           <div className="px-5 py-4 border-b border-border bg-background flex items-center justify-between">
             <span className="text-xs font-mono text-muted-foreground uppercase tracking-wide">
               Live-Vorschau
             </span>
-            {previewLoading && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Wird aktualisiert...
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {previewLoading && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Wird aktualisiert...
+                </span>
+              )}
+              {/* Zoom toggle */}
+              <div className="flex items-center border border-border rounded-sm overflow-hidden">
+                {([0.75, 1] as const).map((z) => (
+                  <button
+                    key={z}
+                    type="button"
+                    onClick={() => setZoom(z)}
+                    className={`px-2.5 py-1 text-[11px] font-mono transition-colors ${
+                      zoom === z
+                        ? "bg-foreground text-background"
+                        : "bg-background hover:bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {z === 0.75 ? "75%" : "100%"}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="flex-1 overflow-auto p-6 flex justify-center">
             {previewSrc ? (
@@ -410,8 +520,8 @@ export function TemplatesClient({ initialSettings }: TemplatesClientProps) {
                   height: "1123px",
                   flexShrink: 0,
                   transformOrigin: "top center",
-                  transform: "scale(0.75)",
-                  marginBottom: "-282px",
+                  transform: `scale(${zoom})`,
+                  marginBottom: `${-(1123 * (1 - zoom))}px`,
                 }}
               >
                 <iframe

@@ -2,12 +2,14 @@ export type FontFamily = "Helvetica Neue" | "Georgia" | "Arial" | "Times New Rom
 export type LogoSize = "small" | "medium" | "large";
 export type Spacing = "compact" | "normal" | "spacious";
 export type TableStyle = "default" | "striped" | "minimal";
+export type FontSize = "small" | "normal" | "large";
 
 export interface TemplateSettings {
   primaryColor: string;
   textColor: string;
   accentTextColor: string;
   fontFamily: FontFamily;
+  fontSize: FontSize;
   logoSize: LogoSize;
   spacing: Spacing;
   tableStyle: TableStyle;
@@ -21,6 +23,7 @@ export const CLASSIC_DEFAULTS: TemplateSettings = {
   textColor: "#1f2937",
   accentTextColor: "#ffffff",
   fontFamily: "Helvetica Neue",
+  fontSize: "normal",
   logoSize: "medium",
   spacing: "normal",
   tableStyle: "default",
@@ -32,6 +35,7 @@ export const MODERN_DEFAULTS: TemplateSettings = {
   textColor: "#1f2937",
   accentTextColor: "#ffffff",
   fontFamily: "Arial",
+  fontSize: "normal",
   logoSize: "medium",
   spacing: "normal",
   tableStyle: "minimal",

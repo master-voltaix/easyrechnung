@@ -83,6 +83,8 @@ export function generateInvoiceHtml(data: InvoiceData, settings?: TemplateSettin
   const logoH = LOGO_HEIGHT[s.logoSize];
   const logoW = LOGO_WIDTH[s.logoSize];
   const font = s.fontFamily;
+  const fontScale = s.fontSize === "small" ? 0.88 : s.fontSize === "large" ? 1.17 : 1.0;
+  const fs = (n: number) => Math.round(n * fontScale);
 
   // spacing-based values
   const pagePad =
@@ -128,13 +130,13 @@ export function generateInvoiceHtml(data: InvoiceData, settings?: TemplateSettin
       return `
       <tr style="${rowBg}">
         <td style="${cellPad ? `padding:${cellPad};` : ""}${borderBottom} vertical-align:top;">
-          <div style="font-weight:500; font-size:11px;">${item.title}</div>
-          ${item.description ? `<div style="font-size:10px; color:#6b7280; margin-top:1px;">${item.description}</div>` : ""}
+          <div style="font-weight:500; font-size:${fs(11)}px;">${item.title}</div>
+          ${item.description ? `<div style="font-size:${fs(10)}px; color:#6b7280; margin-top:1px;">${item.description}</div>` : ""}
         </td>
-        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px;">${formatQty(item.quantity)} ${item.unit}</td>
-        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px;">${formatEuro(item.unitPrice)}</td>
-        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px;">${item.vatRate.toFixed(0)} %</td>
-        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-weight:500; font-size:11px;">${formatEuro(gross)}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:${fs(11)}px;">${formatQty(item.quantity)} ${item.unit}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:${fs(11)}px;">${formatEuro(item.unitPrice)}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:${fs(11)}px;">${item.vatRate.toFixed(0)} %</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-weight:500; font-size:${fs(11)}px;">${formatEuro(gross)}</td>
       </tr>
     `;
     })
@@ -163,7 +165,7 @@ export function generateInvoiceHtml(data: InvoiceData, settings?: TemplateSettin
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: '${font}', Helvetica, Arial, sans-serif;
-      font-size: 12px;
+      font-size: ${fs(12)}px;
       color: ${bodyTextColor};
       background: white;
     }
@@ -186,7 +188,7 @@ export function generateInvoiceHtml(data: InvoiceData, settings?: TemplateSettin
       margin-bottom: ${sectionGap};
     }
     .header-title {
-      font-size: 26px;
+      font-size: ${fs(26)}px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #111827;
@@ -198,32 +200,32 @@ export function generateInvoiceHtml(data: InvoiceData, settings?: TemplateSettin
     }
     .recipient-block { width: 55%; }
     .sender-line {
-      font-size: 9px;
+      font-size: ${fs(9)}px;
       color: #9ca3af;
       border-bottom: 1px solid #e5e7eb;
       padding-bottom: 3px;
       margin-bottom: 5px;
     }
-    .recipient-address { font-size: 12px; line-height: 1.5; }
+    .recipient-address { font-size: ${fs(12)}px; line-height: 1.5; }
     .info-block { width: 42%; text-align: right; }
-    .info-block-company { font-size: 11px; line-height: 1.5; margin-bottom: 5px; color: #374151; }
-    .invoice-meta { font-size: 11px; line-height: 1.7; }
+    .info-block-company { font-size: ${fs(11)}px; line-height: 1.5; margin-bottom: 5px; color: #374151; }
+    .invoice-meta { font-size: ${fs(11)}px; line-height: 1.7; }
     .invoice-meta strong { font-weight: 700; }
-    .intro-text { margin-bottom: 5mm; font-size: 12px; line-height: 1.5; }
+    .intro-text { margin-bottom: 5mm; font-size: ${fs(12)}px; line-height: 1.5; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 4mm; }
     .table-header { background-color: ${color}; color: ${textOnAccent}; }
-    .table-header th { padding: 7px 10px; text-align: left; font-size: 11px; font-weight: 600; }
+    .table-header th { padding: 7px 10px; text-align: left; font-size: ${fs(11)}px; font-weight: 600; }
     .table-header th:not(:first-child) { text-align: right; }
     .totals-section { display: flex; justify-content: flex-end; margin-bottom: 5mm; }
     .totals-table { border-collapse: collapse; }
-    .totals-table td { padding: 3px 0; font-size: 11px; }
+    .totals-table td { padding: 3px 0; font-size: ${fs(11)}px; }
     .totals-table td:first-child { color: #6b7280; text-align: right; padding-right: 20px; min-width: 180px; }
     .totals-table td:last-child { text-align: right; min-width: 100px; }
-    .total-final td { font-weight: 700; font-size: 13px; border-top: 2px solid ${color}; padding-top: 6px !important; }
+    .total-final td { font-weight: 700; font-size: ${fs(13)}px; border-top: 2px solid ${color}; padding-top: 6px !important; }
     .separator { border: none; border-top: 1px solid #e5e7eb; margin: 3mm 0; }
-    .payment-text { font-size: 11px; line-height: 1.5; margin-bottom: 3mm; }
-    .custom-note { font-size: 10px; line-height: 1.5; color: #6b7280; margin-bottom: 3mm; }
-    .closing { font-size: 11px; line-height: 1.7; }
+    .payment-text { font-size: ${fs(11)}px; line-height: 1.5; margin-bottom: 3mm; }
+    .custom-note { font-size: ${fs(10)}px; line-height: 1.5; color: #6b7280; margin-bottom: 3mm; }
+    .closing { font-size: ${fs(11)}px; line-height: 1.7; }
     .footer {
       position: absolute;
       bottom: 0;
@@ -235,7 +237,7 @@ export function generateInvoiceHtml(data: InvoiceData, settings?: TemplateSettin
       justify-content: space-between;
       background: white;
     }
-    .footer-col { font-size: 9px; line-height: 1.6; color: #6b7280; width: 32%; }
+    .footer-col { font-size: ${fs(9)}px; line-height: 1.6; color: #6b7280; width: 32%; }
     .footer-col strong { color: #374151; font-weight: 600; }
     .logo-box { padding: 8px 12px; border-radius: 4px; display: inline-block; }
   </style>

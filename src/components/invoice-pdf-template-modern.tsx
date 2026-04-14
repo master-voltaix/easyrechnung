@@ -33,6 +33,8 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
   const logoH = LOGO_HEIGHT[s.logoSize];
   const logoW = LOGO_WIDTH[s.logoSize];
   const font = s.fontFamily;
+  const fontScale = s.fontSize === "small" ? 0.88 : s.fontSize === "large" ? 1.17 : 1.0;
+  const fs = (n: number) => Math.round(n * fontScale);
 
   // spacing-based values
   const headerPadV =
@@ -76,13 +78,13 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
       return `
       <tr style="${rowBg}">
         <td style="padding:${cellPad}; ${borderBottom} vertical-align:top;">
-          <div style="font-weight:600; font-size:11px; color:#111827;">${item.title}</div>
-          ${item.description ? `<div style="font-size:10px; color:#6b7280; margin-top:2px;">${item.description}</div>` : ""}
+          <div style="font-weight:600; font-size:${fs(11)}px; color:#111827;">${item.title}</div>
+          ${item.description ? `<div style="font-size:${fs(10)}px; color:#6b7280; margin-top:2px;">${item.description}</div>` : ""}
         </td>
-        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px; color:#374151;">${formatQty(item.quantity)} ${item.unit}</td>
-        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px; color:#374151;">${formatEuro(item.unitPrice)}</td>
-        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:11px; color:#374151;">${item.vatRate.toFixed(0)} %</td>
-        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-weight:600; font-size:11px; color:#111827;">${formatEuro(gross)}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:${fs(11)}px; color:#374151;">${formatQty(item.quantity)} ${item.unit}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:${fs(11)}px; color:#374151;">${formatEuro(item.unitPrice)}</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-size:${fs(11)}px; color:#374151;">${item.vatRate.toFixed(0)} %</td>
+        <td style="padding:${cellPad}; ${borderBottom} text-align:right; font-weight:600; font-size:${fs(11)}px; color:#111827;">${formatEuro(gross)}</td>
       </tr>
     `;
     })
@@ -92,8 +94,8 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
     .map(
       (g) => `
     <tr>
-      <td style="padding:3px 0; color:#6b7280; text-align:right; padding-right:20px; font-size:11px;">USt. (${g.rate.toFixed(0)} %)</td>
-      <td style="padding:3px 0; text-align:right; min-width:100px; font-size:11px;">${formatEuro(g.amount)}</td>
+      <td style="padding:3px 0; color:#6b7280; text-align:right; padding-right:20px; font-size:${fs(11)}px;">USt. (${g.rate.toFixed(0)} %)</td>
+      <td style="padding:3px 0; text-align:right; min-width:100px; font-size:${fs(11)}px;">${formatEuro(g.amount)}</td>
     </tr>
   `
     )
@@ -111,7 +113,7 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: '${font}', Helvetica, Arial, sans-serif;
-      font-size: 12px;
+      font-size: ${fs(12)}px;
       color: #374151;
       background: white;
     }
@@ -138,7 +140,7 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
       justify-content: space-between;
       background: white;
     }
-    .footer-col { font-size: 9px; line-height: 1.6; color: #6b7280; width: 32%; }
+    .footer-col { font-size: ${fs(9)}px; line-height: 1.6; color: #6b7280; width: 32%; }
     .footer-col strong { color: #374151; font-weight: 600; }
   </style>
 </head>
@@ -152,10 +154,10 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
     <!-- Header: Company info left, Logo right -->
     <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:${headerPadV} ${headerPadH}; margin-bottom:0;">
       <div>
-        <div style="font-size:20px; font-weight:700; color:${color}; letter-spacing:-0.5px; margin-bottom:4px;">
+        <div style="font-size:${fs(20)}px; font-weight:700; color:${color}; letter-spacing:-0.5px; margin-bottom:4px;">
           ${data.company.companyName}
         </div>
-        <div style="font-size:10px; line-height:1.6; color:#6b7280;">
+        <div style="font-size:${fs(10)}px; line-height:1.6; color:#6b7280;">
           ${companyAddressLines}
         </div>
       </div>
@@ -168,17 +170,17 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
     <div style="background:#f9fafb; padding:5mm ${headerPadH}; border-top:2px solid ${color}; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:${sectionGap};">
       <!-- Recipient address -->
       <div style="width:50%;">
-        <div style="font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Rechnungsempfänger</div>
-        <div style="font-size:12px; line-height:1.6; color:#111827;">
+        <div style="font-size:${fs(9)}px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Rechnungsempfänger</div>
+        <div style="font-size:${fs(12)}px; line-height:1.6; color:#111827;">
           ${recipientAddress}
         </div>
-        ${data.customer.vatId ? `<div style="font-size:10px; color:#6b7280; margin-top:4px;">USt-ID: ${data.customer.vatId}</div>` : ""}
+        ${data.customer.vatId ? `<div style="font-size:${fs(10)}px; color:#6b7280; margin-top:4px;">USt-ID: ${data.customer.vatId}</div>` : ""}
       </div>
       <!-- Invoice meta -->
       <div style="text-align:right; width:44%;">
-        <div style="font-size:10px; color:${color}; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:2px;">Rechnung</div>
-        <div style="font-size:18px; font-weight:700; color:#111827; margin-bottom:8px;">${data.invoiceNumber}</div>
-        <div style="font-size:10px; line-height:1.8; color:#6b7280;">
+        <div style="font-size:${fs(10)}px; color:${color}; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:2px;">Rechnung</div>
+        <div style="font-size:${fs(18)}px; font-weight:700; color:#111827; margin-bottom:8px;">${data.invoiceNumber}</div>
+        <div style="font-size:${fs(10)}px; line-height:1.8; color:#6b7280;">
           <div><span style="color:#374151; font-weight:500;">Datum:</span> ${data.issueDate}</div>
           ${data.dueDate ? `<div><span style="color:#374151; font-weight:500;">Fällig:</span> ${data.dueDate}</div>` : ""}
           ${data.serviceDate ? `<div><span style="color:#374151; font-weight:500;">Leistungsdatum:</span> ${data.serviceDate}</div>` : ""}
@@ -187,7 +189,7 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
     </div>
 
     <!-- Intro text -->
-    <div style="padding:0 ${headerPadH}; margin-bottom:${sectionGap}; font-size:11.5px; line-height:1.6; color:#374151;">
+    <div style="padding:0 ${headerPadH}; margin-bottom:${sectionGap}; font-size:${(11.5 * fontScale).toFixed(1)}px; line-height:1.6; color:#374151;">
       Sehr geehrte Damen und Herren,<br>
       hiermit stellen wir Ihnen folgende Leistung in Rechnung:
     </div>
@@ -197,11 +199,11 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
       <table style="width:100%; border-collapse:collapse;">
         <thead>
           <tr style="background:${color}; color:${textOnAccent};">
-            <th style="padding:8px 10px; text-align:left; font-size:10px; font-weight:600; width:40%;">Beschreibung</th>
-            <th style="padding:8px 10px; text-align:right; font-size:10px; font-weight:600;">Menge</th>
-            <th style="padding:8px 10px; text-align:right; font-size:10px; font-weight:600;">Einzelpreis</th>
-            <th style="padding:8px 10px; text-align:right; font-size:10px; font-weight:600;">MwSt.</th>
-            <th style="padding:8px 10px; text-align:right; font-size:10px; font-weight:600;">Gesamt</th>
+            <th style="padding:8px 10px; text-align:left; font-size:${fs(10)}px; font-weight:600; width:40%;">Beschreibung</th>
+            <th style="padding:8px 10px; text-align:right; font-size:${fs(10)}px; font-weight:600;">Menge</th>
+            <th style="padding:8px 10px; text-align:right; font-size:${fs(10)}px; font-weight:600;">Einzelpreis</th>
+            <th style="padding:8px 10px; text-align:right; font-size:${fs(10)}px; font-weight:600;">MwSt.</th>
+            <th style="padding:8px 10px; text-align:right; font-size:${fs(10)}px; font-weight:600;">Gesamt</th>
           </tr>
         </thead>
         <tbody>
@@ -214,15 +216,15 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
     <div style="padding:0 ${headerPadH}; display:flex; justify-content:flex-end; margin-bottom:${sectionGap};">
       <table style="border-collapse:collapse; min-width:260px;">
         <tr>
-          <td style="padding:3px 0; color:#6b7280; text-align:right; padding-right:20px; font-size:11px;">Gesamt (exkl. MwSt.)</td>
-          <td style="padding:3px 0; text-align:right; font-size:11px; min-width:100px;">${formatEuro(data.subtotalNet)}</td>
+          <td style="padding:3px 0; color:#6b7280; text-align:right; padding-right:20px; font-size:${fs(11)}px;">Gesamt (exkl. MwSt.)</td>
+          <td style="padding:3px 0; text-align:right; font-size:${fs(11)}px; min-width:100px;">${formatEuro(data.subtotalNet)}</td>
         </tr>
         ${vatGroupRows}
         <tr>
           <td colspan="2" style="padding-top:6px;">
             <div style="border-left:3px solid ${color}; padding-left:12px; display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; font-size:13px; color:#111827;">Gesamtbetrag</span>
-              <span style="font-weight:700; font-size:15px; color:${color}; margin-left:24px;">${formatEuro(data.totalGross)}</span>
+              <span style="font-weight:700; font-size:${fs(13)}px; color:#111827;">Gesamtbetrag</span>
+              <span style="font-weight:700; font-size:${fs(15)}px; color:${color}; margin-left:24px;">${formatEuro(data.totalGross)}</span>
             </div>
           </td>
         </tr>
@@ -237,7 +239,7 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
     <!-- Payment text -->
     ${
       data.dueDate
-        ? `<div style="padding:0 ${headerPadH}; margin-bottom:3mm; font-size:11px; line-height:1.6; color:#374151;">
+        ? `<div style="padding:0 ${headerPadH}; margin-bottom:3mm; font-size:${fs(11)}px; line-height:1.6; color:#374151;">
       Bitte überweisen Sie den Rechnungsbetrag innerhalb von ${paymentDays} Tagen auf unser unten genanntes Konto.
       Für weitere Fragen stehen wir Ihnen sehr gerne zur Verfügung.
     </div>`
@@ -245,10 +247,10 @@ export function generateModernInvoiceHtml(data: InvoiceData, settings?: Template
     }
 
     <!-- Custom note -->
-    ${data.customNote ? `<div style="padding:0 ${headerPadH}; margin-bottom:3mm; font-size:10px; line-height:1.5; color:#6b7280;">${data.customNote}</div>` : ""}
+    ${data.customNote ? `<div style="padding:0 ${headerPadH}; margin-bottom:3mm; font-size:${fs(10)}px; line-height:1.5; color:#6b7280;">${data.customNote}</div>` : ""}
 
     <!-- Closing -->
-    <div style="padding:0 ${headerPadH}; font-size:11px; line-height:1.8; color:#374151;">
+    <div style="padding:0 ${headerPadH}; font-size:${fs(11)}px; line-height:1.8; color:#374151;">
       Vielen Dank für die gute Zusammenarbeit.<br>
       Mit freundlichen Grüßen,<br>
       <strong style="color:#111827;">${data.company.companyName}</strong>

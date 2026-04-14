@@ -143,7 +143,8 @@
       "Bash(node -e \"const fs=require\\('fs'\\);const p=JSON.parse\\(fs.readFileSync\\('/dev/stdin','utf8'\\)\\);console.log\\('main:',p.main,'exports:',JSON.stringify\\(p.exports,null,2\\).slice\\(0,300\\)\\);\")",
       "Bash(xargs ls:*)",
       "Bash(grep -l \"template\\\\|Template\" /e/EasyRechnung/src/components/*.tsx)",
-      "Bash(npx shadcn@latest add alert-dialog --yes)"
+      "Bash(npx shadcn@latest add alert-dialog --yes)",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); ['Equal','Expand','ArrowUpDown','ChevronsUpDown','Minimize2','Square','Maximize2','Table','AlignJustify','List','Minus','Plus'].forEach\\(n => console.log\\(n, !!l[n]\\)\\)\")"
     ]
   }
 }

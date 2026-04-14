@@ -8,7 +8,7 @@ export default async function VorlagenPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
 
-  const settings = await getUserTemplateSettings(session.user.id, "classic");
+  const classic = await getUserTemplateSettings(session.user.id, "classic");
 
   return (
     <div className="-mt-4 lg:-mt-6 -mx-4 sm:-mx-6 lg:-mx-8 -mb-6">
@@ -18,7 +18,7 @@ export default async function VorlagenPage() {
           Passen Sie Ihre Standardvorlage nach Ihren Wünschen an.
         </p>
       </div>
-      <TemplatesClient initialSettings={settings} />
+      <TemplatesClient initialClassic={classic} />
     </div>
   );
 }
