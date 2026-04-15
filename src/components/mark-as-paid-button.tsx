@@ -27,7 +27,8 @@ export function MarkAsPaidButton({ id, currentStatus }: Props) {
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      const date = paidDate ? new Date(paidDate + "T00:00:00") : new Date();
+      const [y, m, d] = (paidDate || new Date().toISOString().split("T")[0]).split("-").map(Number);
+      const date = paidDate ? new Date(y, m - 1, d) : new Date();
       const result = await updateInvoiceStatus(id, "PAID", date);
       if (result.error) {
         toast({ title: "Fehler", description: result.error, variant: "destructive" });

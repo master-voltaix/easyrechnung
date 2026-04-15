@@ -33,7 +33,8 @@ export function InvoiceStatusActions({ id, currentStatus, paidDate }: InvoiceSta
   const handleMarkAsPaid = async () => {
     setLoading(true);
     try {
-      const date = new Date(selectedDate + "T00:00:00");
+      const [y, m, d] = selectedDate.split("-").map(Number);
+      const date = new Date(y, m - 1, d);
       const r1 = await updateInvoicePaidDate(id, date);
       if (r1.error) {
         toast({ title: "Fehler", description: r1.error, variant: "destructive" });

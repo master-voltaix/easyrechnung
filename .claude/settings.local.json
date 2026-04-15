@@ -144,7 +144,9 @@
       "Bash(xargs ls:*)",
       "Bash(grep -l \"template\\\\|Template\" /e/EasyRechnung/src/components/*.tsx)",
       "Bash(npx shadcn@latest add alert-dialog --yes)",
-      "Bash(node -e \"const l = require\\('lucide-react'\\); ['Equal','Expand','ArrowUpDown','ChevronsUpDown','Minimize2','Square','Maximize2','Table','AlignJustify','List','Minus','Plus'].forEach\\(n => console.log\\(n, !!l[n]\\)\\)\")"
+      "Bash(node -e \"const l = require\\('lucide-react'\\); ['Equal','Expand','ArrowUpDown','ChevronsUpDown','Minimize2','Square','Maximize2','Table','AlignJustify','List','Minus','Plus'].forEach\\(n => console.log\\(n, !!l[n]\\)\\)\")",
+      "Bash(find E:/EasyRechnung -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"updateInvoiceStatus\\\\|updateInvoicePaidDate\" {} \\\\;)",
+      "Bash(find E:/EasyRechnung -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"paidDate\" {} \\\\;)"
     ]
   }
 }
